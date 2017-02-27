@@ -17,10 +17,8 @@ travis:
 extract-c-code:
 	$(MAKE) -C ../code extract-c
 
-extract-c-crypto:
-	$(MAKE) -C ../secure_api krml-test.exe
 
-extract-c: extract-c-code extract-c-crypto
+extract-c: extract-c-code
 
 ct:
 	$(MAKE) -C ../code ct
@@ -28,18 +26,12 @@ ct:
 verify-code:
 	$(MAKE) -C ../code ci
 
-verify-crypto:
-	$(MAKE) -C ../secure_api all-hints
-
 hints-code:
 	$(MAKE) -C ../code hints
 
-hints-crypto:
-	$(MAKE) -C ../secure_api all-hints
+hints: hints-code
 
-hints: hints-code hints-crypto
-
-verify: verify-code verify-crypto
+verify: verify-code
 
 build-snapshot:
 	mkdir -p snapshot
@@ -69,5 +61,4 @@ update-snapshot:
 
 clean:
 	$(MAKE) -C ../code clean
-	$(MAKE) -C ../secure_api clean
 	rm -rf snapshot *.o *.exe *~
