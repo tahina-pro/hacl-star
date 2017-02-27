@@ -59,6 +59,7 @@ test-aead:
 	$(CC) $(CCOPTS) \
 	Poly1305_64.c -c -o Poly1305_64.o
 	$(CC) $(CCOPTS) \
+	-I$(OPENSSL_HOME)/include \
 	Chacha20.o Poly1305_64.o kremlib.c testlib.c Hacl_Policies.c Chacha20Poly1305.c test-aead.c -o test-aead.exe \
 	-l sodium  $(OPENSSL_HOME)/libcrypto.a $(OPENSSL_HOME)/libssl.a -lpthread -ldl
 	./test-aead.exe
