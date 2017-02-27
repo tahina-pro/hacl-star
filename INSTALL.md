@@ -60,16 +60,27 @@ This will create a `snapshot` directory in `test/`, containing the extracted cod
 Note that to test the code you will need various other cryptographic libraries (OpemSSL, NaCl, LibSodium, TweetNaCl). Please checkout the corresponding submodules:
 
 ```
-cd dependencies
+cd other_providers
 git submodule update --init
 cd openssl
 ./config no-asm
 make
 cd ../libsodium
+sudo apt-get install libtool autoconf automake
 ./autogen.sh
 ./configure --disable-asm --enable-opt
 make
 sudo make install
+export LD_LIBRARY_PATH=/usr/local/lib
+```
+
+If you want to actually run the tests, you need more packages:
+
+```
+sudo apt-get install software-properties-common
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt-get update
+sudo apt-get install gcc-6 g++-6
 ```
 
 Then simply run `make -C test/snapshot test`.
