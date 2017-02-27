@@ -125,4 +125,4 @@ extract-c: Chacha20.c Salsa20.c HSalsa20.c XSalsa20.c Salsa.c
 
 
 clean:
-	rm -rf *.exe *.exe.* *.out *~ salsa-c chacha-c chacha-cc hsalsa-c xsalsa-c chacha2-c *.graph
+	rm -rf *.exe *.exe.* *.out *~ salsa-c salsa2-c chacha-c chacha-cc hsalsa-c xsalsa-c chacha2-c *.graph
