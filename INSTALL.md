@@ -43,3 +43,10 @@ sudo make install
 ```
 
 Then simply run `make -C test/snapshot test`.
+
+### Functional specifications
+
+The functional specifications of the HACL primitives are located in the ./specs directory.
+While those files cannot be extracted to C code, they are runnable in OCaml for sanity checks.
+
+Run `make -C specs` to run the functional specifications.

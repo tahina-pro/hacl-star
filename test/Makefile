@@ -60,4 +60,5 @@ update-snapshot:
 
 clean:
 	$(MAKE) -C ../code clean
+	$(MAKE) -C ../specs clean
 	rm -rf snapshot *.o *.exe *~
