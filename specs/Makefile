@@ -9,7 +9,7 @@ FSTAR_ARGS=$(OTHERFLAGS)
 # OCaml variables
 OCAMLOPT := $(OCAMLOPT) -w -8-20-26-28-10
 
-all: poly1305.exe chacha20.exe salsa20.exe secretbox.exe chacha20poly1305.exe gf128.exe
+all: poly1305.exe chacha20.exe salsa20.exe
 
 EXTRACTED= FStar_Seq_Base.ml FStar_Seq.ml FStar_Seq_Properties.ml FStar_Math_Lib.ml FStar_BitVector.ml FStar_UInt.ml  FStar_Endianness.ml
 
@@ -21,14 +21,6 @@ OCAML_INCLUDES=-I ../code/lib/ml -I $(FSTAR_HOME)/ulib/ml/hyperstack ../code/lib
 
 %.fst-ver: %.fst
 	$(FSTAR) --include generic --include ../code/lib/kremlin --include experimental --include $(FSTAR_HOME)/ulib/hyperstack $*.fst
-
-gf128.exe: Spec.GF128.fst
-	$(MAKE) -C ../code/lib/ml MEM=HST
-	mkdir -p gf128-spec
-	$(FSTAR) $(ARGS) --odir gf128-spec $^
-	@echo 'let _ = print_string (if test() then "SUCCESS\n" else "FAILURE\n")' >> gf128-spec/Spec_GF128.ml
-	$(OCAMLOPT) -I gf128-spec $(OCAML_INCLUDES) $(addprefix gf128-spec/, $(EXTRACTED)) gf128-spec/Spec_GaloisField.ml gf128-spec/Spec_GF128.ml -o gf128.exe
-	./gf128.exe
 
 poly1305.exe: Spec.Poly1305.fst
 	$(MAKE) -C ../code/lib/ml MEM=HST
@@ -54,23 +46,7 @@ salsa20.exe: Spec.Salsa20.fst
 	$(OCAMLOPT) -I salsa-spec $(OCAML_INCLUDES) $(addprefix salsa-spec/, $(EXTRACTED)) salsa-spec/Combinators.ml salsa-spec/Spec_Lib.ml salsa-spec/Spec_CTR.ml salsa-spec/Spec_Salsa20.ml -o salsa20.exe
 	./salsa20.exe
 
-secretbox.exe: Spec.HSalsa20.fst Spec.SecretBox.fst
-	$(MAKE) -C ../code/lib/ml MEM=HST
-	mkdir -p secretbox-spec
-	$(FSTAR) $(ARGS) --odir secretbox-spec $^
-	@echo 'let _ = print_string (if test() then "SUCCESS\n" else "FAILURE\n")' >> secretbox-spec/Spec_SecretBox.ml
-	$(OCAMLOPT) -I secretbox-spec $(OCAML_INCLUDES) $(addprefix secretbox-spec/, $(EXTRACTED)) secretbox-spec/Combinators.ml secretbox-spec/Spec_Lib.ml secretbox-spec/Spec_CTR.ml secretbox-spec/Spec_Salsa20.ml secretbox-spec/Spec_HSalsa20.ml secretbox-spec/Spec_Poly1305.ml secretbox-spec/Spec_SecretBox.ml -o secretbox.exe
-	./secretbox.exe
-
-chacha20poly1305.exe: Spec.Chacha20Poly1305.fst
-	$(MAKE) -C ../code/lib/ml MEM=HST
-	mkdir -p chacha-poly-spec
-	$(FSTAR) $(ARGS) --odir chacha-poly-spec $^
-	@echo 'let _ = print_string (if test() then "SUCCESS\n" else "FAILURE\n")' >> chacha-poly-spec/Spec_Chacha20Poly1305.ml
-	$(OCAMLOPT) -I chacha-poly-spec $(OCAML_INCLUDES) $(addprefix chacha-poly-spec/, $(EXTRACTED)) chacha-poly-spec/Combinators.ml chacha-poly-spec/Spec_Lib.ml chacha-poly-spec/Spec_CTR.ml chacha-poly-spec/Spec_Chacha20.ml chacha-poly-spec/Spec_Poly1305.ml chacha-poly-spec/Spec_Chacha20Poly1305.ml -o chacha20poly1305.exe
-	./chacha20poly1305.exe
-
 
 clean:
 	$(MAKE) -C ../code/lib/ml clean
-	rm -rf *.cmi *.cmo *.cmx *.o *~ *.out *.exe poly-spec chacha-spec secretbox-spec chacha-poly-spec salsa-spec gf128-spec
+	rm -rf *.cmi *.cmo *.cmx *.o *~ *.out *.exe poly-spec chacha-spec  salsa-spec
