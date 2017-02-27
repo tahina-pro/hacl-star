@@ -106,7 +106,7 @@ val update_last:
     (requires (fun h -> stable h st /\ live h m))
     (ensures  (fun h0 _ h1 -> modifies_1 (get_accumulator st) h0 h1 /\ before_finish h1 st))
 let update_last st m len =
-  I.poly1305_update_last empty_log st (Buffer.sub m 0ul len) (Hacl.Cast.sint32_to_sint64 len)
+  I.poly1305_update_last empty_log st (Buffer.sub m 0ul len) (Int.Cast.uint32_to_uint64 len)
 
 
 val finish:
@@ -273,6 +273,7 @@ let poly1305_blocks_init st input len k =
   let l = Poly.poly1305_partial st part_input (Int.Cast.uint32_to_uint64 len_16) kr in
   pad_last l st last_block rem_16
 
+#reset-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 200"
 
 val poly1305_blocks_continue:
   log:I.log_t ->
@@ -302,7 +303,7 @@ let poly1305_blocks_continue log st input len =
   pad_last l st last_block rem_16
 
 
-#reset-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 5"
+#reset-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 50"
 
 val poly1305_blocks_finish:
   log:I.log_t ->

@@ -26,7 +26,7 @@ module U64  = FStar.UInt64
 #reset-options "--initial_fuel 0 --max_fuel 0 --initial_ifuel 0 --max_ifuel 0 --z3rlimit 20"
 
 val poly1305_init_spec: key:Seq.seq H8.t{Seq.length key = 16} ->
-  Tot (st:poly1305_state_{red_44 (MkState?.r st) /\ red_45 (MkState?.h st)
+  GTot (st:poly1305_state_{red_44 (MkState?.r st) /\ red_45 (MkState?.h st)
     /\ seval (MkState?.r st) = UInt.logand #128 (hlittle_endian key) 0x0ffffffc0ffffffc0ffffffc0fffffff
     /\ seval (MkState?.h st) = 0})
 let poly1305_init_spec key =
