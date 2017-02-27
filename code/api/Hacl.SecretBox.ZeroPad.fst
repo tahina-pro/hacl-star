@@ -1,3 +1,5 @@
+(* API from the NaCl SecretBox construction:
+   https://cr.yp.to/highspeed/naclcrypto-20090310.pdf *)
 module Hacl.SecretBox.ZeroPad
 
 open FStar.HyperStack

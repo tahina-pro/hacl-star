@@ -1,3 +1,5 @@
+(* API from the NaCl Box construction:
+   https://cr.yp.to/highspeed/naclcrypto-20090310.pdf *)
 module Hacl.Box.ZeroPad
 
 open FStar.Buffer
