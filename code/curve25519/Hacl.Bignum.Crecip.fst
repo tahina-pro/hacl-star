@@ -221,16 +221,13 @@ private inline_for_extraction let crecip_2 buf =
   fmul b t0 b;
   let h1 = ST.get() in
   no_upd_lemma_1 h0 h1 b a;
-  (* no_upd_lemma_1 h0 h1 b t0; *)
   fsquare_times t0 b 10ul;
   let h2 = ST.get() in
-  (* no_upd_lemma_1 h1 h2 b t0; *)
   no_upd_lemma_1 h1 h2 t0 a;
   fmul c t0 b;
   let h3 = ST.get() in
   no_upd_lemma_1 h2 h3 c b;
   no_upd_lemma_1 h2 h3 c a;
-  (* no_upd_lemma_1 h2 h3 c t0; *)
   fsquare_times t0 c 20ul;
   let h4 = ST.get() in
   no_upd_lemma_1 h3 h4 t0 b;

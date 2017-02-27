@@ -41,7 +41,6 @@ val fsum:
       /\ live h1 a /\ modifies_1 a h0 h1
       /\ eval h1 a = eval h0 a + eval h0 b
       /\ as_seq h1 a == fsum_tot (as_seq h0 a) (as_seq h0 b)))
-      (* /\ F.(get_elem h1 a = get_elem h0 a @+ get_elem h0 b))) *)
 [@"c_inline"]
 let fsum a b =
   let h0 = ST.get() in
@@ -146,19 +145,6 @@ val fmul:
       ))
 [@"c_inline"]
 let fmul output a b = fmul output a b
-
-
-(* val fsquare_times: *)
-(*   output:felem -> *)
-(*   input:felem{disjoint output input} -> *)
-(*   count:FStar.UInt32.t{FStar.UInt32.v count > 0} -> *)
-(*   Stack unit *)
-(*     (requires (fun h -> live h output /\ live h input /\ fsquare_pre (as_seq h input))) *)
-(*     (ensures (fun h0 _ h1 -> live h0 output /\ live h1 output /\ live h0 input /\ modifies_1 output h0 h1 *)
-(*       /\ fsquare_pre (as_seq h0 input) *)
-(*       /\ (as_seq h1 output) == fsquare_times_tot (as_seq h0 input) (FStar.UInt32.v count))) *)
-(* let fsquare_times output input count = *)
-(*   fsquare_times output input count *)
 
 
 [@"c_inline"]

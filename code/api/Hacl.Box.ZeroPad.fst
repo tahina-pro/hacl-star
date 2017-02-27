@@ -146,7 +146,6 @@ let crypto_box_easy_afternm c m mlen n k =
   blit cmac 0ul c 16ul 16ul;
   pop_frame();
   z
-  (* crypto_box_detached_afternm (sub c 16ul mlen') (sub c 0ul 16ul) (sub m 0ul mlen') mlen n k *)
 
 
 val crypto_box_easy:

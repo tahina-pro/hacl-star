@@ -71,7 +71,6 @@ private let aead_encrypt_poly  c mlen mac aad aadlen k n tmp =
   let h0 = ST.get() in
   let tmp = Buffer.create (uint64_to_sint64 0uL) 6ul in
   let st = Poly1305_64.mk_state (Buffer.sub tmp 0ul 3ul) (Buffer.sub tmp 3ul 3ul) in
-  (* let st = Poly1305_64.alloc () in *)
   let h1 = ST.get() in
   let log:log_t = Poly1305_64.poly1305_blocks_init st aad aadlen mk in
   let h2 = ST.get() in
@@ -81,7 +80,6 @@ private let aead_encrypt_poly  c mlen mac aad aadlen k n tmp =
   let h4 = ST.get() in
   lemma_aead_encrypt_poly h0 h1 h2 h3 h4 Hacl.Impl.Poly1305_64.(st.r) Hacl.Impl.Poly1305_64.(st.h) mac;
   pop_frame()
-
 
 
 private val lemma_aead_encrypt:
@@ -165,8 +163,8 @@ val aead_decrypt:
   mac:uint8_p{length mac = maclen /\ disjoint mac m} ->
   aad:uint8_p ->
   aadlen:u32{let len = U32.v aadlen in len = length aad}  ->
-  k:uint8_p{length k = keylen /\ (* disjoint k mac /\  *)disjoint k m} ->
-  n:uint8_p{length n = noncelen /\ (* disjoint n mac /\  *)disjoint n m} ->
+  k:uint8_p{length k = keylen /\ disjoint k m} ->
+  n:uint8_p{length n = noncelen /\ disjoint n m} ->
   Stack u32
     (requires (fun h -> live h c /\ live h mac /\ live h m /\ live h n /\ live h k /\ live h aad))
     (ensures  (fun h0 z h1 -> modifies_1 m h0 h1 /\ live h1 m))

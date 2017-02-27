@@ -10,9 +10,7 @@ open Hacl.Spec.Bignum.Bigint
 open Hacl.Bignum.Limb
 open Hacl.Bignum.Modulo
 open Hacl.Bignum.Fproduct
-(* open Hacl.Spec.Bignum.Fmul.Lemmas *)
 open Hacl.Spec.Bignum.Fmul
-(* open Hacl.Spec.Bignum.Fmul2 *)
 
 module U32 = FStar.UInt32
 
@@ -98,7 +96,7 @@ private inline_for_extraction let get_seq b =
 private val fmul_:
   output:felem ->
   input:felem{disjoint output input} ->
-  input2:felem{(* disjoint output input2 /\  *)disjoint input input2} ->
+  input2:felem{disjoint input input2} ->
   Stack unit
     (requires (fun h -> live h output /\ live h input /\ live h input2
       /\ fmul_pre (as_seq h input) (as_seq h input2)))
@@ -126,7 +124,6 @@ private let fmul_ output input input2 =
   copy_from_wide_ output t clen;
   carry_0_to_1 output;
   let h3 = ST.get() in
-  (* assume (modifies_2 output input h1 h3); *)
   pop_frame()
 
 

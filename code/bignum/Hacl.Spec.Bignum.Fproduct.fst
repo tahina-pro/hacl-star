@@ -146,14 +146,12 @@ let carry_wide_pre (s:seqelem_wide) (i:nat{i < len}) : GTot Type0 =
 
 
 val carry_wide_step: s:seqelem_wide ->
-    i:nat{i < len-1 /\ carry_wide_pre s i
-      (* /\ (forall (j:nat). {:pattern (w (Seq.index s j))} j < i ==> w (Seq.index s j) < pow2 limb_size) *)} ->
+    i:nat{i < len-1 /\ carry_wide_pre s i} ->
   Tot (s':seqelem_wide{
     (forall (j:nat). {:pattern (Seq.index s' j)} (j < i \/ (j > i+1 /\ j < len))
                ==> Seq.index s' j == Seq.index s j)
     /\ w (Seq.index s' i) = w (Seq.index s i) % pow2 limb_size
-    /\ w (Seq.index s' (i+1)) = w (Seq.index s (i+1)) + (w (Seq.index s i) / pow2 limb_size)
-    (* /\ (forall (j:nat). {:pattern (w (Seq.index s' j))} j < (i+1) ==> w (Seq.index s' j) < pow2 limb_size) *)})
+    /\ w (Seq.index s' (i+1)) = w (Seq.index s (i+1)) + (w (Seq.index s i) / pow2 limb_size)})
 let carry_wide_step s i =
     let si = Seq.index s i in
     let sip1 = Seq.index s (i+1) in
@@ -253,7 +251,7 @@ let lemma_carry_wide_step s i = lemma_carry_wide_step_3 s i len
 val carry_wide_spec: s:seqelem_wide -> i:nat{i < len /\ carry_wide_pre s i} ->
   Tot (s':seqelem_wide{seval_wide s' = seval_wide s
     /\ (forall (j:nat). {:pattern (w (Seq.index s' j))} (j < len - 1) ==> w (Seq.index s' j) < pow2 limb_size)
-    (* /\ (i < len-1 ==> w (Seq.index s' (len-1)) < w (Seq.index s (len-1)) + pow2 (2*word_size - limb_size)) *)})
+    })
   (decreases (len - 1 - i))
 let rec carry_wide_spec s i =
   if i = len - 1 then s
