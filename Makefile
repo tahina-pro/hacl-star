@@ -5,7 +5,6 @@
 verify:
 	$(MAKE) -C test verify
 
-
 extract-c:
 	$(MAKE) -C test extract-c-code
 	$(MAKE) -C test build-snapshot
