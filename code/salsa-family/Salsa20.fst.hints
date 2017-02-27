@@ -1,0 +1,56 @@
+[
+  "L\u0001—\"\u0017K\u00075På9.›ão¶",
+  [
+    [
+      "Salsa20.crypto_stream_salsa20_xor_ic",
+      1,
+      2,
+      1,
+      [ "@query", "assumption_Prims.HasEq_int" ],
+      0
+    ],
+    [
+      "Salsa20.crypto_stream_salsa20_xor_ic",
+      2,
+      2,
+      1,
+      [ "@query", "assumption_Prims.HasEq_int" ],
+      0
+    ],
+    [ "Salsa20.crypto_stream_salsa20_xor_ic", 3, 2, 1, [ "@query" ], 0 ],
+    [
+      "Salsa20.crypto_stream_salsa20",
+      1,
+      2,
+      1,
+      [ "@query", "assumption_Prims.HasEq_int" ],
+      0
+    ],
+    [
+      "Salsa20.crypto_stream_salsa20",
+      2,
+      2,
+      1,
+      [ "@query", "assumption_Prims.HasEq_int" ],
+      0
+    ],
+    [ "Salsa20.crypto_stream_salsa20", 3, 2, 1, [ "@query" ], 0 ],
+    [
+      "Salsa20.crypto_stream_salsa20_xor",
+      1,
+      2,
+      1,
+      [ "@query", "assumption_Prims.HasEq_int" ],
+      0
+    ],
+    [
+      "Salsa20.crypto_stream_salsa20_xor",
+      2,
+      2,
+      1,
+      [ "@query", "assumption_Prims.HasEq_int" ],
+      0
+    ],
+    [ "Salsa20.crypto_stream_salsa20_xor", 3, 2, 1, [ "@query" ], 0 ]
+  ]
+]
