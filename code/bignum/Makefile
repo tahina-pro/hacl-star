@@ -21,10 +21,6 @@ BIGNUM_FILES= \
 	Hacl.Bignum.Fproduct.fst \
 	Hacl.Bignum.Fmul.fst \
 	Hacl.Bignum.fst 
-#	Hacl.Bignum.Constants.fsti \
-	Hacl.Bignum.Parameters.fsti \
-	Hacl.Bignum.Modulo.fsti \
-	Hacl.Bignum.Crecip.fsti \
 
 BIGNUM_MODULES=$(basename $(BIGNUM_FILES))
 

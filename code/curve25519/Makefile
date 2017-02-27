@@ -92,7 +92,6 @@ all-hints: $(addsuffix -hints, $(X25519_SPECIFIC))
 all-ci: $(addsuffix -verify, $(filter-out $(SLOW) $(TODO), $(X25519_FILES)))
 
 extract-c:
-	# Weird \* because of https://caml.inria.fr/mantis/view.php?id=7473
 	mkdir -p x25519-c
 	$(KREMLIN_HOME)/krml -tmpdir x25519-c -ccopt -std=gnu99 \
 		-I ../bignum -I ../lib/kremlin \
