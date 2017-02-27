@@ -5,7 +5,6 @@ FSTAR_HOME?=$(HACL_HOME)/kremlin
 .PHONY: snapshot
 
 all:
-	$(MAKE) extract-c
 	$(MAKE) ct
 	$(MAKE) verify
 
