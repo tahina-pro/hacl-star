@@ -21,6 +21,8 @@ Please install the OCaml compiler and the OPAM package manager.
 To verify and extract the code *Makefiles* are present in the [code](code) directory, and its sub directories.
 Run `make verify` to run the verification targets, or `make extract-c` to compile to F* code to c.
 
+NB: verification will take some times (~12h). While the verification targets are parallelizable, some files require in large amount of RAM (i.e. code/salsa-family/Hacl.Impl.Salsa20.fst).
+
 ### C code
 
 Already extracted C code can be found in the [snapshots/hacl-c](snapshots/hacl-c) directory.
