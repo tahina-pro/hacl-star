@@ -155,9 +155,6 @@ let crypto_secretbox_open_detached m c mac clen n k =
   let subkey = Buffer.sub tmp 0ul 32ul in
   let mackey = Buffer.sub tmp 32ul 64ul in
   let cmac   = Buffer.sub tmp 96ul 16ul in
-  (* let subkey = create (uint8_to_sint8 0uy) 32ul in *)
-  (* let mackey = create (uint8_to_sint8 0uy) 64ul in *)
-  (* let cmac   = create (uint8_to_sint8 0uy) 16ul in *)
   let h0' = ST.get() in
   Hacl.Symmetric.HSalsa20.crypto_core_hsalsa20 subkey (sub n 0ul 16ul) k;
   Salsa20.crypto_stream_salsa20 mackey 32uL (sub n 16ul 8ul) subkey;
@@ -168,16 +165,6 @@ let crypto_secretbox_open_detached m c mac clen n k =
   assume (Hacl.Policies.declassifiable cmac);
   let verify = cmp_bytes mac cmac 16ul in
   let z = crypto_secretbox_open_detached_decrypt m c clen n subkey verify in
-    (* if U8.(verify =^ 0uy) then ( *)
-    (*   Salsa20.crypto_stream_salsa20_xor m *)
-    (*                                     c *)
-    (*     				U64.(clen +^ 32uL) *)
-    (*     				(sub n 16ul 8ul) *)
-    (*                                 	subkey; *)
-    (*   set_zero_bytes subkey; *)
-    (*   set_zero_bytes m; *)
-    (*   0ul) *)
-    (* else 0xfffffffful in *)
   pop_frame();
   z
 

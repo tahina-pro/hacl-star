@@ -49,14 +49,20 @@ noeq type poly1305_state_ = | MkState: r:seqelem -> h:seqelem -> log:log_t -> po
 
 #reset-options "--initial_fuel 0 --max_fuel 0 --z3rlimit 50"
 
-assume val load64_le_spec : b:bytes{Seq.length b = 8} -> GTot (r:limb{v r == hlittle_endian b})
-(* let load64_le_spec b = lemma_little_endian_is_bounded (reveal_sbytes b); *)
-(*   UInt64.uint_to_t (little_endian b) *)
-assume val store64_le_spec: r:limb -> Tot (b:bytes{Seq.length b = 8 /\ v r == hlittle_endian b})
-(* let store64_le_spec r = little *)
+val load64_le_spec : b:bytes{Seq.length b = 8} -> GTot (r:limb{v r == hlittle_endian b})
+let load64_le_spec b = lemma_little_endian_is_bounded (reveal_sbytes b);
+  UInt64.uint_to_t (little_endian b)
 
-assume val load128_le_spec : b:word_16 -> Tot (r:wide{Wide.v r == hlittle_endian b})
-assume val store128_le_spec: r:wide -> Tot (b:word_16{Wide.v r == hlittle_endian b})
+val store64_le_spec: r:limb -> GTot (b:bytes{Seq.length b = 8 /\ v r == hlittle_endian b})
+let store64_le_spec r = reveal_sbytes (hlittle_bytes 8ul (v r))
+
+val load128_le_spec : b:word_16 -> GTot (r:wide{Wide.v r == hlittle_endian b})
+let load128_le_spec b = lemma_little_endian_is_bounded (reveal_sbytes b);
+  UInt128.uint_to_t (little_endian b)
+
+val store128_le_spec: r:wide -> GTot (b:word_16{Wide.v r == hlittle_endian b})
+let store128_le_spec r = reveal_sbytes (hlittle_bytes 16ul (w r))
+
 
 #reset-options "--z3rlimit 20 --initial_fuel 0 --max_fuel 0"
 
