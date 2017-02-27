@@ -1,3 +1,10 @@
+(*
+  This module illustrates the use of higher level combinators to implement loops in Low*.
+  It will be compiled directly by KreMLin when the feature stabilizes.
+  NB: the Chacha20 code (compiled with the loop combinators) is as efficient
+  as the Salsa20 code, compiled with recursive calls and inlined functions.
+  *)
+
 module Loops
 
 open FStar.Buffer
