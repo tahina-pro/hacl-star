@@ -16,18 +16,6 @@ export KREMLIN_HOME= <path-to hacl-star/dependencies/kremlin>
 The only prerequisite to install F* and KreMLin is OCaml.
 Please install the OCaml compiler and the OPAM package manager.
 
-Then, from the Hacl* root repository:
-```
-make prepare
-```
-
-This will install required OPAM packages and build F* and Kremlin.
-
-To generate the library, run:
-```
-make
-```
-
 ### Verifying / extracting the code
 
 To verify and extract the code *Makefiles* are present in the [code](code) directory, and its sub directories.
@@ -36,3 +24,22 @@ Run `make verify` to run the verification targets, or `make extract-c` to compil
 ### C code
 
 Already extracted C code can be found in the [snapshots/hacl-c](snapshots/hacl-c) directory.
+
+You can also extract the code directly from F*, running `make extract-c` in this directory.
+This will create a `snapshot` directory in `./test`, containing the extracted code alongside with test files.
+Note that to test the code you will need various other cryptographic libraries (OpemSSL, NaCl, LibSodium, TweetNaCl). Please checkout the corresponding submodules:
+
+```
+cd dependencies
+git submodule update --init
+cd openssl
+./config no-asm
+make
+cd ../libsodium
+./autogen.sh
+./configure --disable-asm --enable-opt
+make
+sudo make install
+```
+
+Then simply run `make -C test/snapshot test`.
