@@ -69,7 +69,7 @@ Reproducing the performance measurements may be achieved in two different ways.
 - One may follow the instructions in `INSTALL.md`.
 - One may use our Docker image that comes with all the prerequisites for
   building all of our projects, via:
-  `docker run projecteverest/everest-icfp2017 -it /bin/bash --login`, followed by
+  `docker run -it projecteverest/everest-icfp2017 /bin/bash --login`, followed by
   `./everest pull make test`
 
 As a proof that we have not pushed any commits to our image after the submission
