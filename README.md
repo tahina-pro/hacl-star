@@ -62,5 +62,5 @@ Reproducing the performance measurements may be achieved in two different ways.
 - One may follow the instructions in `INSTALL.md`.
 - One may use our Docker image that comes with all the prerequisites for
   building all of our projects, via:
-  `docker run projecteverest/everest-chomolungma -it bash --login`, followed by
-  `git checkout icfp2017 && ./everest pull make`.
+  `docker run projecteverest/everest-icfp2017 -it /bin/bash --login`, followed by
+  `./everest pull make test`
