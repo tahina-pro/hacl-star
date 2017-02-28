@@ -74,5 +74,5 @@ Reproducing the performance measurements may be achieved in two different ways.
 
 As a proof that we have not pushed any commits to our image after the submission
 deadline, we provide the git sha1 of the icfp2017 branch above:
-`088da8f64070d72177dc4e5346f252842af68d0f`. We do not intend to leverage the recent
+`ceb78311053d3dd91d412bb344fcfc1c5258d94c`. We do not intend to leverage the recent
 SHA1 collision attacks to push further commits.
