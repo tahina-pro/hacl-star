@@ -1,63 +1,38 @@
 # INSTALLATION
 
+The C code can be compiled using gcc-6, and tested against various
+other cryptographic libraries.
+
+However, the C code can also be extracted from its proof. To this end,
 Hacl* relies on [F*](https://github.com/FStarLang/FStar) and
-[KreMLin](https://github.com/FStarLang/kremlin) for verification.
+[KreMLin](https://github.com/FStarLang/kremlin) for both code
+extraction and verification.
 
-### Installing prerequisites
+This file linearly describes the whole testing, code extraction,
+testing and verification processes along with all prerequisites
+required for each step.
 
-The main prerequisite to install F* and KreMLin is OCaml. Please install the
-OCaml compiler and the OPAM package manager. A couple other tools are also
-needed, including `cmake`. If you've never installed any of these, on Ubuntu
-derivates, run:
+### Prerequisites for compiling the code
 
-```
-sudo apt-get install ocaml opam m4 build-essential cmake
-opam --init
-eval $(opam config env)
-opam depext ocamlfind batteries sqlite3 fileutils stdint zarith yojson pprint menhir \
-  ppx_deriving_yojson zarith pprint menhir ulex process fix wasm
-opam install ocamlfind batteries sqlite3 fileutils stdint zarith yojson pprint menhir \
-  ppx_deriving_yojson zarith pprint menhir ulex process fix wasm
-```
+To compile the C code, you need to use GCC 6.
 
-### Installing FStar and KreMLin
-
-Please run:
+To install GCC 6 on Ubuntu 16.04 or derivatives, use the following
+sequence of commands.
 
 ```
-git submodule update --init
-make -C dependencies/FStar/src/ocaml-output
-make -C dependencies/kremlin
+sudo apt-get install software-properties-common
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt-get update
+sudo apt-get install gcc-6 g++-6
 ```
 
-### Environment
+### Prerequisites for testing the code
 
-Please set FSTAR_HOME and KREMLIN_HOME in your environnement. Unless you already
-have these tools in a custom location, from this directory, run:
-
-```
-export FSTAR_HOME=$(pwd)/dependencies/FStar
-export KREMLIN_HOME=$(pwd)/dependencies/kremlin
-```
-
-### Verifying / extracting the code (optional)
-
-To verify and extract the code *Makefiles* are present in the [code](code)
-directory, and its sub directories. Run `make verify` to run the verification
-targets, or `make extract-c` to compile to F* code to C (optional).
-
-NB: verification will take some time (~12h). While the verification targets are
-parallelizable, some files require large amounts of RAM (i.e.
-`code/salsa-family/Hacl.Impl.Salsa20.fst`).
-
-### C code
-
-Already extracted C code can be found in the [snapshots/hacl-c](snapshots/hacl-c) directory.
-
-You can also extract the code directly from F*, running `make extract-c` in the
-present directory.
-This will create a `snapshot` directory in `test/`, containing the extracted code alongside with test files.
-Note that to test the code you will need various other cryptographic libraries (OpemSSL, NaCl, LibSodium, TweetNaCl). Please checkout the corresponding submodules:
+Testing the code involves comparisons with various other cryptographic
+libraries (OpenSSL, NaCl, LibSodium, TweetNaCl), which you will need
+to download, compile and install prior to testing. To this end, please
+checkout the corresponding submodules and compile and install using
+the following sequence of commands:
 
 ```
 cd other_providers
@@ -74,20 +49,90 @@ sudo make install
 export LD_LIBRARY_PATH=/usr/local/lib
 ```
 
-If you want to actually run the tests, you need more packages:
+### Testing the already extracted code
+
+Already extracted C code can be found in the
+[snapshots/hacl-c](snapshots/hacl-c) directory.
+
+You can test it by `make -C snapshots/hacl-c test`.
+
+
+### Extracting the code, testing it and verifying it  (optional)
+
+#### Prerequisites for code extraction and verification
+
+Please set `FSTAR_HOME` and `KREMLIN_HOME` in your environnement. Unless
+you already have F* and KreMLin in a custom location, from this
+directory, run:
 
 ```
-sudo apt-get install software-properties-common
-sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-sudo apt-get update
-sudo apt-get install gcc-6 g++-6
+export FSTAR_HOME=$(pwd)/dependencies/FStar
+export KREMLIN_HOME=$(pwd)/dependencies/kremlin
 ```
 
-Then simply run `make -C test/snapshot test`.
+If you have not installed FStar or KreMLin, you can install them into
+the directories specified above, using the following procedure.
 
-### Functional specifications
+The main prerequisite to install F* and KreMLin is OCaml. Please
+install the OCaml compiler and the OPAM package manager. A couple
+other tools are also needed, including `cmake`. If you've never
+installed any of these, on Ubuntu derivates, run:
 
-The functional specifications of the HACL primitives are located in the ./specs directory.
-While those files cannot be extracted to C code, they are runnable in OCaml for sanity checks.
+```
+sudo apt-get install ocaml opam m4 build-essential cmake
+opam --init
+eval $(opam config env)
+opam depext ocamlfind batteries sqlite3 fileutils stdint zarith yojson pprint menhir \
+  ppx_deriving_yojson zarith pprint menhir ulex process fix wasm
+opam install ocamlfind batteries sqlite3 fileutils stdint zarith yojson pprint menhir \
+  ppx_deriving_yojson zarith pprint menhir ulex process fix wasm
+```
+
+Then, you can compile FStar and KreMLin by:
+
+```
+git submodule update --init
+make -C dependencies/FStar/src/ocaml-output
+make -C dependencies/kremlin
+```
+
+#### Extracting and testing the code
+
+You can extract the code directly from F*, running `make extract-c` in
+the present directory. This will create a `snapshot` directory in
+`test/`, containing the extracted code alongside with test files.
+
+Once extracted, you can test that code by `make -C test/snapshot test`.
+
+*Makefiles* are also present in the [code](code) directory, and its
+sub directories. There, run `make extract-c` to extract the
+corresponding code if you wish to do so separately.
+
+#### Functional specifications
+
+The functional specifications of the HACL primitives are located in
+the ./specs directory. While those files cannot be extracted to C
+code, they are runnable in OCaml for sanity checks.
 
 Run `make -C specs` to run the functional specifications.
+
+#### Verifying the code
+
+NB: verification will take some time (~12h). While the verification
+targets are parallelizable, some files require large amounts of RAM
+(i.e.  `code/salsa-family/Hacl.Impl.Salsa20.fst`).
+
+Just run `make verify`.
+
+*Makefiles* are also present in the [code](code) directory, and its
+sub directories. There, run `make verify` to run the verification
+targets if you wish to do so separately.
+
+### Uninstalling the custom libsodium
+
+After testing, you can uninstall the custom copy of libsodium that was
+compiled in the testing prerequisites above by the following command:
+
+```
+sudo make -C other_providers/libsodium uninstall
+```
