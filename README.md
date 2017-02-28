@@ -1,6 +1,13 @@
 Non-anonymous supplementary materials for ICFP submission
 =========================================================
 
+Companion paper
+---------------
+
+The `companion-paper.pdf` file provides another paper by the same authors,
+to appear at IEEE S&P'17. It describes the security proof of our TLS 1.3
+implementation, and briefly mentions our toolchain and the performance results.
+
 Proofs
 ------
 
@@ -64,3 +71,8 @@ Reproducing the performance measurements may be achieved in two different ways.
   building all of our projects, via:
   `docker run projecteverest/everest-chomolungma -it bash --login`, followed by
   `git checkout icfp2017 && ./everest pull make`.
+
+As a proof that we have not pushed any commits to our image after the submission
+deadline, we provide the git sha1 of the icfp2017 branch above:
+`088da8f64070d72177dc4e5346f252842af68d0f`. We do not intend to leverage the recent
+SHA1 collision attacks to push further commits.
