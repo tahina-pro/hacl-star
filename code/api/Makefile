@@ -65,7 +65,7 @@ extract-c: extract-api extract-box extract-aead
 
 extract-api:
 	mkdir -p api-c
-	$(KRML) -tmpdir api-c NaCl.fst -verbose \
+	$(KRML) -tmpdir api-c NaCl.fst $(VERBOSE) \
 		-drop Hacl.Bignum.Constants -drop Hacl.Bignum.Parameters -drop Hacl.Bignum.Limb -drop Hacl.Bignum.Wide \
 		-drop Hacl.UInt16 -drop Hacl.Types -drop 'Spec.\*' -drop 'Hacl.Spec.\*' \
 		-drop Hacl.Constants -drop "Hacl.Endianness" \
@@ -75,7 +75,7 @@ extract-api:
 
 extract-box:
 	mkdir -p box-c
-	$(KRML) -tmpdir box-c NaCl.fst -verbose \
+	$(KRML) -tmpdir box-c NaCl.fst $(VERBOSE) \
 		-drop Hacl.Bignum.Constants -drop Hacl.Bignum.Parameters -drop Hacl.Bignum.Limb -drop Hacl.Bignum.Wide \
 		-drop Hacl.UInt16 -drop Hacl.Types -drop 'Spec.\*' -drop 'Hacl.Spec.\*' \
 		-drop Hacl.Constants -drop "Hacl.Endianness" \
@@ -86,7 +86,7 @@ extract-box:
 
 extract-aead:
 	mkdir -p aead-c
-	$(KRML2) -tmpdir aead-c Hacl.AEAD.Chacha20Poly1305.fst -verbose \
+	$(KRML2) -tmpdir aead-c Hacl.AEAD.Chacha20Poly1305.fst $(VERBOSE) \
 		-drop Hacl.Bignum.Constants -drop Hacl.Bignum.Parameters -drop Hacl.Bignum.Limb -drop Hacl.Bignum.Wide \
 		-drop Hacl.UInt16 -drop Hacl.Types -drop 'Spec.\*' -drop 'Hacl.Spec.\*' \
 		-drop Hacl.Constants -drop "Hacl.Endianness" -drop 'Combinators' \
