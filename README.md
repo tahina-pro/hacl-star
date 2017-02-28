@@ -28,14 +28,15 @@ submission. In order of appearance in the paper:
   in `code/bignum/Hacl.Bignum.Limb.fst`, including the the definition of `v` and
   `eq_mask`
 - **Fig. 3, Poly1305 bigint:**
-  since the paper was written, our Poly1305 version was ported to 64-bits; the
-  new normalization functions are in `code/poly1305/Hacl.Bignum.Modulo.fst`, and
-  the closest equivalent of `poly1305_mac` is `poly1305_last_pass_` in
-  `code/poly1305/Hacl.Impl.Poly1305_64.fst`. We also include an older version of
-  our codebase for reference purposes; the `normalize` function is in
-  `dependencies/FStar/examples/low-level/crypto/Crypto.Symmetric.Poly1305.Bignum.fst`
-  and is called `finalize`; the `poly1305_mac` function is in
-  `dependencies/FStar/examples/low-level/crypto/Crypto.Symmetric.Poly1305.fst`:1083.
+  + since the paper was written, our Poly1305 version was ported to 64-bits; the
+    new normalization functions are in `code/poly1305/Hacl.Bignum.Modulo.fst`, and
+    the closest equivalent of `poly1305_mac` is `poly1305_last_pass_` in
+    `code/poly1305/Hacl.Impl.Poly1305_64.fst`
+  + we also include an older version of
+    our codebase for reference purposes; the `normalize` function is in
+    `dependencies/FStar/examples/low-level/crypto/Crypto.Symmetric.Poly1305.Bignum.fst`
+    and is called `finalize`; the `poly1305_mac` function is in
+    `dependencies/FStar/examples/low-level/crypto/Crypto.Symmetric.Poly1305.fst`:1083.
 - **2.4, AEAD security proof:**
   the AEAD development has not been integrated with the HACL* library yet; the
   top-level AEAD proof statement, `encrypt`, is in
