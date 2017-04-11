@@ -7,6 +7,8 @@ CCOPTS= -Ofast -march=native -mtune=native  -fwrapv -fomit-frame-pointer -funrol
 CC=gcc-6 -flto --param max-unroll-times=20
 #CC=/usr/local/opt/llvm/bin/clang -flto
 
+riot: test-chacha-solo
+
 test: test-poly	test-chacha test-salsa test-curve test-secretbox test-box test-aead
 
 test-poly:
@@ -47,8 +49,12 @@ test-salsa:
 test-chacha:
 	$(CC) $(CCOPTS) \
 	-I $(OPENSSL_HOME)/include -I $(OPENSSL_HOME)/crypto/poly1305 -I ../../other_providers/tweetnacl \
-	../../other_providers/tweetnacl/tweetnacl.c kremlib.c testlib.c Chacha20.c test-chacha.c -o test-chacha.exe \
-	 $(OPENSSL_HOME)/libcrypto.a -l sodium -lpthread -ldl
+	../../other_providers/tweetnacl/tweetnacl.c kremlib.c testlib.c Chacha20.c test-chacha.c -o test-chacha.exe
+	./test-chacha.exe
+
+test-chacha-solo:
+	$(CC) $(CCOPTS) \
+	-I $(OPENSSL_HOME)/include -I $(OPENSSL_HOME)/crypto/poly1305 kremlib.c testlib.c Chacha20.c test-chacha.c -o test-chacha.exe
 	./test-chacha.exe
 
 test-chacha-vec:
