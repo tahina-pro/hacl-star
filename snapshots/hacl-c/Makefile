@@ -7,7 +7,12 @@ CCOPTS= -Ofast -march=native -mtune=native  -fwrapv -fomit-frame-pointer -funrol
 CC=gcc-6 -flto --param max-unroll-times=20
 #CC=/usr/local/opt/llvm/bin/clang -flto
 
-riot: test-chacha-solo
+riot: riot-lib
+
+riot-lib:
+	$(CC) $(CCOPTS) Chacha20.c -c -o Chacha20.o
+	$(CC) $(CCOPTS) Curve25519.c -c -o Curve25519.o
+	$(CC) -shared $(CCOPTS) Chacha20.o Curve25519.o kremlib.c testlib.c -o libhacl.so
 
 test: test-poly	test-chacha test-salsa test-curve test-secretbox test-box test-aead
 
