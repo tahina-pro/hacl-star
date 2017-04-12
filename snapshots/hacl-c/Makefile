@@ -12,11 +12,11 @@ CC ?= gcc-6 -flto --param max-unroll-times=20
 riot: riot-lib
 
 riot-lib:
-	$(CC) $(CFLAGS) -Wno-unused-parameter -Wno-shift-op-parentheses -Wno-unused-variable kremlib.c -c -o kremlib.o
-	$(CC) $(CFLAGS) -Wno-unused-parameter -Wno-shift-op-parentheses -Wno-unused-variable testlib.c -c -o testlib.o
-	$(CC) $(CFLAGS) -Wno-unused-parameter -Wno-shift-op-parentheses -Wno-unused-variable Chacha20.c -c -o Chacha20.o
-	$(CC) $(CFLAGS) -Wno-unused-parameter -Wno-shift-op-parentheses -Wno-unused-variable Poly1305_64.c -c -o Poly1305_64.o
-	$(CC) $(CFLAGS) -Wno-unused-parameter -Wno-shift-op-parentheses -Wno-unused-variable Curve25519.c -c -o Curve25519.o
+	$(CC) $(CFLAGS) kremlib.c -c -o kremlib.o
+	$(CC) $(CFLAGS) testlib.c -c -o testlib.o
+	$(CC) $(CFLAGS) Chacha20.c -c -o Chacha20.o
+	$(CC) $(CFLAGS) Poly1305_64.c -c -o Poly1305_64.o
+	$(CC) $(CFLAGS) Curve25519.c -c -o Curve25519.o
 	ar rcs hacl.a kremlib.o testlib.o Chacha20.o Poly1305_64.o Curve25519.o
 
 test: test-poly	test-chacha test-salsa test-curve test-secretbox test-box test-aead
