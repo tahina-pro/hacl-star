@@ -53,5 +53,5 @@ void TestLib_perr(unsigned int err_code){
 }
 
 void TestLib_print_cycles_per_round(cycles c1, cycles c2, uint32_t rounds) {
-  printf("[perf] cpu cycles per round (averaged over %d) is %f\n", rounds, (float)(c2 - c1)/rounds);
+  printf("[perf] cpu cycles per round (averaged over %d) is %f\n", (int)rounds, (float)(c2 - c1)/rounds);
 }
