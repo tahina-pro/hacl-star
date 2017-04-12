@@ -15,8 +15,9 @@ riot-lib:
 	$(CC) $(CFLAGS) -Wno-unused-parameter -Wno-shift-op-parentheses -Wno-unused-variable kremlib.c -c -o kremlib.o
 	$(CC) $(CFLAGS) -Wno-unused-parameter -Wno-shift-op-parentheses -Wno-unused-variable testlib.c -c -o testlib.o
 	$(CC) $(CFLAGS) -Wno-unused-parameter -Wno-shift-op-parentheses -Wno-unused-variable Chacha20.c -c -o Chacha20.o
+	$(CC) $(CFLAGS) -Wno-unused-parameter -Wno-shift-op-parentheses -Wno-unused-variable Poly1305_64.c -c -o Poly1305_64.o
 	$(CC) $(CFLAGS) -Wno-unused-parameter -Wno-shift-op-parentheses -Wno-unused-variable Curve25519.c -c -o Curve25519.o
-	ar rcs hacl.a kremlib.o testlib.o Chacha20.o Curve25519.o
+	ar rcs hacl.a kremlib.o testlib.o Chacha20.o Poly1305_64.o Curve25519.o
 
 test: test-poly	test-chacha test-salsa test-curve test-secretbox test-box test-aead
 
@@ -31,13 +32,13 @@ test-poly:
 test-poly32-custom:
 	$(CC) -Ofast -m32 -mtune=generic -fwrapv -fomit-frame-pointer -funroll-loops -fmath-errno \
 	-I $(TWEETNACL_HOME) $(TWEETNACL_HOME)/tweetnacl.c \
-	kremlib.c testlib.c Poly1305_32_custom.c test-poly32-custom.c -o test-poly32-custom.exe 
+	kremlib.c testlib.c Poly1305_32_custom.c test-poly32-custom.c -o test-poly32-custom.exe
 	./test-poly32-custom.exe
 
 test-poly32:
 	$(CC) -Ofast -m32 -mtune=generic -fwrapv -fomit-frame-pointer -funroll-loops -fmath-errno \
 	-I $(TWEETNACL_HOME) $(TWEETNACL_HOME)/tweetnacl.c \
-	kremlib.c testlib.c Poly1305_32.c test-poly32.c -o test-poly32.exe 
+	kremlib.c testlib.c Poly1305_32.c test-poly32.c -o test-poly32.exe
 	./test-poly32.exe
 
 test-poly-vec:
@@ -52,7 +53,7 @@ test-salsa:
 	Salsa20.c -c -o Salsa20.o
 	$(CC) $(CCOPTS) \
 	-I $(TWEETNACL_HOME) $(TWEETNACL_HOME)/tweetnacl.c \
-	kremlib.c testlib.c Salsa20.o test-salsa.c -l sodium -o test-salsa.exe 
+	kremlib.c testlib.c Salsa20.o test-salsa.c -l sodium -o test-salsa.exe
 	./test-salsa.exe
 
 test-chacha:
@@ -84,7 +85,7 @@ test-curve:
 test-curve32-custom:
 	$(CC) -Ofast -mtune=generic -m32 -fwrapv -fomit-frame-pointer -funroll-loops -std=c11 -fmath-errno \
 	-I $(TWEETNACL_HOME) $(TWEETNACL_HOME)/tweetnacl.c curve25519-donna.c \
-	kremlib.c testlib.c Curve25519_32_custom.c test-curve32-custom.c -o test-curve32-custom.exe 
+	kremlib.c testlib.c Curve25519_32_custom.c test-curve32-custom.c -o test-curve32-custom.exe
 	./test-curve32-custom.exe
 
 test-secretbox:
@@ -172,8 +173,8 @@ lib-test: lib
 	./test-chacha.exe
 	./test-salsa.exe
 	./test-poly.exe
-	./test-secretbox.exe	
-	./test-aead.exe	
+	./test-secretbox.exe
+	./test-aead.exe
 	./test-curve.exe
 	./test-box.exe
 
