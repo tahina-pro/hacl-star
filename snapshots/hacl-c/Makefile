@@ -12,10 +12,10 @@ CC ?= gcc-6 -flto --param max-unroll-times=20
 riot: riot-lib
 
 riot-lib:
-	$(CC) $(CFLAGS) kremlib.c -c -o kremlib.o
-	$(CC) $(CFLAGS) testlib.c -c -o testlib.o
-	$(CC) $(CFLAGS) Chacha20.c -c -o Chacha20.o
-	$(CC) $(CFLAGS) Curve25519.c -c -o Curve25519.o
+	$(CC) $(CFLAGS) -Wno-unused-parameter kremlib.c -c -o kremlib.o
+	$(CC) $(CFLAGS) -Wno-unused-parameter testlib.c -c -o testlib.o
+	$(CC) $(CFLAGS) -Wno-unused-parameter Chacha20.c -c -o Chacha20.o
+	$(CC) $(CFLAGS) -Wno-unused-parameter Curve25519.c -c -o Curve25519.o
 	ar rcs hacl.a kremlib.o testlib.o Chacha20.o Curve25519.o
 
 test: test-poly	test-chacha test-salsa test-curve test-secretbox test-box test-aead
