@@ -3,17 +3,19 @@
 TWEETNACL_HOME   ?=../../other_providers/tweetnacl
 OPENSSL_HOME   ?=../../other_providers/openssl
 LIBSODIUM_HOME ?=../../other_providers/libsodium/src/libsodium
-CCOPTS= -Ofast -march=native -mtune=native  -fwrapv -fomit-frame-pointer -funroll-all-loops -g
-CC=gcc-6 -flto --param max-unroll-times=20
+
+CCOPTS = -Ofast -march=native -mtune=native  -fwrapv -fomit-frame-pointer -funroll-all-loops -g
+CFLAGS ?= $(CCOPTS)
+CC ?= gcc-6 -flto --param max-unroll-times=20
 #CC=/usr/local/opt/llvm/bin/clang -flto
 
 riot: riot-lib
 
 riot-lib:
-	$(CC) $(CCOPTS) kremlib.c -c -o kremlib.o
-	$(CC) $(CCOPTS) testlib.c -c -o testlib.o
-	$(CC) $(CCOPTS) Chacha20.c -c -o Chacha20.o
-	$(CC) $(CCOPTS) Curve25519.c -c -o Curve25519.o
+	$(CC) $(CFLAGS) kremlib.c -c -o kremlib.o
+	$(CC) $(CFLAGS) testlib.c -c -o testlib.o
+	$(CC) $(CFLAGS) Chacha20.c -c -o Chacha20.o
+	$(CC) $(CFLAGS) Curve25519.c -c -o Curve25519.o
 	ar rcs hacl.a kremlib.o testlib.o Chacha20.o Curve25519.o
 
 test: test-poly	test-chacha test-salsa test-curve test-secretbox test-box test-aead
