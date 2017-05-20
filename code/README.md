@@ -9,7 +9,15 @@ This directory contains F* code for several cryptographic primitives.
 
 + salsa-family
 
-   Code for Salsa20, HSalsa20, XSalsa20, and ChaCha20
+   Code for Salsa20, HSalsa20, and ChaCha20
+
++ hash
+
+   Code for SHA-256 and SHA-512
+   
++ hmac
+
+    Code for HMAC-SHA-256
 
 + bignum
 
@@ -23,6 +31,14 @@ This directory contains F* code for several cryptographic primitives.
 
    Code for Curve25519 (relies on bignum)
 
++ Ed25519
+
+   Code for Ed25519 (relies on bignum and SHA-512)
+
++ curve25519
+
+   Code for Curve25519 (relies on bignum)
+
 ## Verification
 
 Run `make verify` to run start the library verification.
@@ -31,9 +47,8 @@ Currently verified primitives:
 + Salsa20, HSalsa20, XSalsa20, Chacha20 (memory safety, side channel resistance)
 + Poly1305 (memory safety, overflow safety, functional correctness, side channel resistance)
 + Curve25519 (memory safety, overflow safety, functional correctness, side channel resistance)
-
-Currently unverified and partially-verified primitives are kept in the `experimental` directory.
-They will be moved out of this directory to a subdirectory of `code` once their verification is complete.
++ SHA-256, SHA-512, HMAC-SHA-256 (memory safety, overflow safety, functional correctness, side channel resistance)
++ Ed25519  (memory safety, overflow safety, functional correctness, side channel resistance)
 
 ## Extraction to C and execution
 

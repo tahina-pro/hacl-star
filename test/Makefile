@@ -22,21 +22,9 @@ all:
 	$(MAKE) ct verify OTHERFLAGS="--trace_error"
 	$(MAKE) -C openssl-engine
 
-travis:
-	$(MAKE) extract-c-code
-	$(MAKE) ct
-	$(MAKE) -C .. world
-
 extract-c-code:
 	$(GFIND) ../code -name out.krml -exec touch {} \;
 	$(MAKE) -C $(HACL_HOME)/code extract-c
-
-extract-c-code-experimental:
-	$(MAKE) -C $(HACL_HOME)/code/experimental/ extract-c
-
-extract-c-crypto:
-	$(MAKE) -C ../secure_api krml-test-vale.exe
-	$(MAKE) -C ../secure_api krml-test-hacl.exe
 
 extract-c: extract-c-code extract-c-crypto
 
@@ -46,19 +34,12 @@ ct:
 verify-code:
 	$(MAKE) -C ../code ci
 
-verify-crypto:
-	# Note: the all-hints target fails silently.
-	$(MAKE) -C ../secure_api all-ver OTHERFLAGS="--record_hints"
-
 hints-code:
 	$(MAKE) -C ../code hints
 
-hints-crypto:
-	$(MAKE) -C ../secure_api all-hints
+hints: hints-code
 
-hints: hints-code hints-crypto
-
-verify: verify-code verify-crypto
+verify: verify-code
 
 build-snapshot:
 	mkdir -p $(SNAPSHOT_DIR)
@@ -117,24 +98,24 @@ all-perf:
 	$(MAKE) perf-ccomp
 
 snapshot:
-	$(MAKE) extract-c-code extract-c-code-experimental
+	$(MAKE) extract-c-code
 	$(MAKE) build-snapshot
 	$(MAKE) test-snapshot
 
 snapshot-ccomp:
-	if $(HAS_CCOMP); then $(MAKE) -B extract-c-code extract-c-code-experimental KREMLIN_ARGS="-cc compcert -funroll-loops 10 -fnouint128 -fnostruct-passing"; fi
+	if $(HAS_CCOMP); then $(MAKE) -B extract-c-code KREMLIN_ARGS="-cc compcert -funroll-loops 10 -fnouint128 -fnostruct-passing"; fi
 	if $(HAS_CCOMP); then $(MAKE) -B build-snapshot SNAPSHOT_DIR=snapshot-ccomp; fi
 
 snapshot-msvc:
-	if $(HAS_CL); then $(MAKE) extract-c-code extract-c-code-experimental KREMLIN_ARGS="-cc msvc"; fi
+	if $(HAS_CL); then $(MAKE) extract-c-code KREMLIN_ARGS="-cc msvc"; fi
 	if $(HAS_CL); then $(MAKE) build-snapshot SNAPSHOT_DIR=snapshot-msvc; fi
 
 snapshot-gcc:
-	$(MAKE) -B extract-c-code extract-c-code-experimental
+	$(MAKE) -B extract-c-code
 	$(MAKE) -B build-snapshot SNAPSHOT_DIR=snapshot-gcc
 
 snapshot-gcc-unrolled:
-	$(MAKE) -B extract-c-code extract-c-code-experimental KREMLIN_ARGS="-funroll-loops 5"
+	$(MAKE) -B extract-c-code KREMLIN_ARGS="-funroll-loops 5"
 	$(MAKE) -B build-snapshot SNAPSHOT_DIR=snapshot-gcc-unrolled
 
 all-snapshots:
@@ -154,5 +135,4 @@ update-snapshot:
 
 clean:
 	$(MAKE) -C ../code clean
-	$(MAKE) -C ../secure_api clean
 	rm -rf snapshot snapshot-ccomp snapshot-msvc snapshot-gcc snapshot-gcc-unrolled *.o *.exe *~
