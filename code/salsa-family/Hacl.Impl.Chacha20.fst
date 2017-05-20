@@ -500,11 +500,9 @@ let lemma_chacha20_counter_mode_1 ho output hi input len k n ctr =
   let counter = UInt32.v ctr in
   let blocks_len = (ctx.incr * ctx.blocklen) * (len / (ctx.blocklen * ctx.incr)) in
   let part_len   = len % (ctx.blocklen * ctx.incr) in
-    (* TODO: move to a single lemma for clarify *)
     Math.Lemmas.lemma_div_mod len (ctx.blocklen * ctx.incr);
     Math.Lemmas.multiple_modulo_lemma (len / (ctx.blocklen * ctx.incr)) (ctx.blocklen * ctx.incr);
     Math.Lemmas.lemma_div_le (blocks_len) len ctx.blocklen;
-    (* End TODO *)
   let blocks, last_block = Seq.split (as_seq hi input) blocks_len in
   let cipher_blocks = counter_mode_blocks ctx chacha20_cipher k n counter (reveal_sbytes blocks) in
   Seq.lemma_eq_intro cipher_blocks Seq.createEmpty;

@@ -106,7 +106,6 @@ let c1 = 0x3320646eul
 let c2 = 0x79622d32ul
 let c3 = 0x6b206574ul
 
-// JK: I have to add those assertions to typechecks, would be nice to get rid of it
 let setup (k:key) (n:nonce) (c:counter): Tot state =
   let constants : vec = Seq.Create.create_4 c0 c1 c2 c3 in
   let key_part_1:vec = uint32s_from_le 4 (Seq.slice k 0 16)  in

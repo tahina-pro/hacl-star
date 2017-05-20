@@ -975,20 +975,6 @@ let lemma_double_round_def s =
   let s = quarter_round_vec s in
   lemma_diagonal_round_vec s
 
-(* #reset-options "--initial_fuel 1 --max_fuel 1 --z3rlimit 100" *)
-
-(* // TODO: move somewhere else *)
-(* private val lemma_seq_of_list: (#a:Type) -> (l:list a) -> Lemma *)
-(*   (forall (i:nat). {:pattern (Seq.index (Seq.seq_of_list l) i)} i < List.Tot.length l *)
-(*              ==> Seq.index (Seq.seq_of_list l) i == List.Tot.index l i) *)
-(* let rec lemma_seq_of_list #a l = *)
-(*   match l with *)
-(*   | [] -> Seq.lemma_eq_intro (Seq.seq_of_list l) Seq.createEmpty *)
-(*   | hd::tl -> ( *)
-(*     lemma_seq_of_list #a tl; *)
-(*     Seq.lemma_eq_intro (Seq.seq_of_list l) (Seq.cons hd (Seq.seq_of_list tl)) *)
-(*   ) *)
-
 #reset-options "--max_fuel 0 --z3rlimit 100"
 
 val lemma_setup_standard_1: k:S.key -> n:S.nonce -> c:S.counter -> Lemma
@@ -1462,11 +1448,9 @@ let rec lemma_chacha20_counter_mode_blocks k n c m =
     let len' = len / (64 * 1) in
     Math.Lemmas.lemma_div_mod len (64 * 1);
     let prefix, block = split m (len - 64 * 1) in    
-      (* TODO: move to a single lemma for clarify *)
       Math.Lemmas.lemma_mod_plus (length prefix) 1 (64 * 1);
       Math.Lemmas.lemma_div_le (length prefix) len 64;
       Spec.CTR.Lemmas.lemma_div len (64 * 1);
-      (* End TODO *)
     lemma_chacha20_counter_mode_blocks k n c prefix;
     lemma_chacha20_block k n ((c + (len / 64 - 1)) * 1)
   )

@@ -236,7 +236,6 @@ let carry_top_wide_spec s =
   let b4 = Seq.index s 4 in
   let b0 = Seq.index s 0 in
   let open Hacl.Bignum.Wide in
-  (* TODO: a "mk_mask_wide" function *)
   assert_norm((1 * pow2 limb_size) % pow2 (2 * word_size) = pow2 (limb_size));
   assert_norm(pow2 limb_size > 1);
   let mask = (wide_one <<^ climb_size) -^ wide_one in

@@ -96,7 +96,6 @@ inline_for_extraction let create_3 s0 s1 s2 =
   s
 
 
-(* TODO: move to kremlib or another associated library *)
 inline_for_extraction
 val load128: high:UInt64.t -> low:UInt64.t -> Tot (z:UInt128.t{UInt128.v z = pow2 64 * UInt64.v high
   + UInt64.v low})
@@ -110,7 +109,6 @@ let load128 h l =
   hs |^ ls
 
 
-(* TODO: move to kremlib or another associated library *)
 inline_for_extraction
 val hload128: high:UInt64.t -> low:UInt64.t -> Tot (z:wide{Hacl.UInt128.v z = pow2 64 * UInt64.v high
   + UInt64.v low})

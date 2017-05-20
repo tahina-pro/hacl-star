@@ -40,7 +40,7 @@ SHA2_FILES = \
 all-ci: test
 
 # Verification
-all-verif: $(addsuffix -verify, $(SHA2_FILES)) # This is too costly for the CI
+all-ver: $(addsuffix -verify, $(SHA2_FILES)) # This is too costly for the CI
 
 # Lax typechecking against the restricted integer interface
 %.fst-ct: %.fst
