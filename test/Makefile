@@ -20,7 +20,6 @@ all:
 	# JP FIXME XXX why was this disabled?
 	$(MAKE) extract-c OTHERFLAGS="--trace_error"
 	$(MAKE) ct verify OTHERFLAGS="--trace_error"
-	$(MAKE) -C openssl-engine
 
 extract-c-code:
 	$(GFIND) ../code -name out.krml -exec touch {} \;
