@@ -26,20 +26,24 @@ extract-c-code:
 	$(GFIND) ../code -name out.krml -exec touch {} \;
 	$(MAKE) -C $(HACL_HOME)/code extract-c
 
-extract-c: extract-c-code extract-c-crypto
+extract-c: extract-c-code
 
 ct:
 	$(MAKE) -C ../code ct
 
+verify-spec:
+	$(MAKE) -C ../specs all-ver
+
 verify-code:
 	$(MAKE) -C ../code ci
+
 
 hints-code:
 	$(MAKE) -C ../code hints
 
 hints: hints-code
 
-verify: verify-code
+verify: verify-spec verify-code
 
 build-snapshot:
 	mkdir -p $(SNAPSHOT_DIR)
