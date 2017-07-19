@@ -81,7 +81,11 @@ test-native-sha2_384.exe: sha2-c/SHA2_384.o sha2-c/Hacl_Test_SHA2_384.o $(BASE_O
 test-native-sha2_512.exe: sha2-c/SHA2_512.o sha2-c/Hacl_Test_SHA2_512.o $(BASE_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
 
-
+%.fst-in:
+	@echo --hint_info \
+	$(HINTS_ENABLED) \
+	$(OTHERFLAGS) --include ../lib \
+	$(FSTAR_INCLUDES)
 
 clean:
 	rm -rf *~ *.exe *.exe.dSYM
