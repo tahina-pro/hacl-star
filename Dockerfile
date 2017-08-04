@@ -67,4 +67,4 @@ RUN opam config exec -- make -C code/curve25519 extract-c
 WORKDIR /home/Work
 RUN mkdir artifacts
 RUN cp hacl-star/snapshots/nss/kremlib.h artifacts
-RUN cp hacl-star/code/curve25519-c/* artifacts
+RUN cp hacl-star/code/curve25519/x25519-c/* artifacts
