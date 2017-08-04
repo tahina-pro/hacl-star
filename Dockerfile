@@ -41,6 +41,7 @@ WORKDIR /home/Work/FStar
 RUN git checkout 376a7b279fd1656d1b9890b1582a29f02514a19a
 ENV PATH "~/FStar/bin:$PATH"
 RUN opam config exec -- make -C src/ocaml-output
+RUN opam config exec -- make -C ulib/ml
 WORKDIR /home/Work
 
 # Prepare and build KreMLin
