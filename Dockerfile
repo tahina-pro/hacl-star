@@ -58,7 +58,7 @@ WORKDIR /home/Work/hacl-star
 RUN git checkout mozilla
 ENV FSTAR_HOME /home/Work/FStar
 ENV KREMLIN_HOME /home/Work/kremlin
-ENV FSTAR_HOME /home/Work/hacl-star
+ENV HACL_HOME /home/Work/hacl-star
 
 # Run extraction for Curve25519
 RUN opam config exec -- make -C code/curve25519 extract-c
