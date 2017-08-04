@@ -38,28 +38,32 @@ WORKDIR /home/Work
 # Prepare and build F*
 RUN git clone https://github.com/FStarLang/FStar.git
 WORKDIR /home/Work/FStar
-# RUN git checkout 187bcc284ad075a2dcff0ac76f5479f75e1914f2
+RUN git checkout 376a7b279fd1656d1b9890b1582a29f02514a19a
 ENV PATH "~/FStar/bin:$PATH"
-RUN opam config exec -- make -C src/ocaml-output
-RUN make ocaml -C src
 RUN opam config exec -- make -C src/ocaml-output
 WORKDIR /home/Work
 
 # Prepare and build KreMLin
 RUN git clone https://github.com/FStarLang/kremlin.git
 WORKDIR /home/Work/kremlin
-# RUN git checkout a47b5a31b959a57c166a5de5db718c2d11980b1b
+RUN git checkout f3a8fbf58a713ab5548902e5272bd9dd66688630
 ENV PATH "~/kremlin:$PATH"
 RUN opam config exec -- make
 WORKDIR /home/Work
 
 # Prepare and build HaCl*
-ARG CACHEBUST=1
 RUN git clone https://github.com/mitls/hacl-star.git
 WORKDIR /home/Work/hacl-star
-RUN git checkout beurdouche_no_dependencies
-# RUN git checkout 1b415d2af711b82ccd466c6ffb232794b6b8c51b
+RUN git checkout mozilla
 ENV FSTAR_HOME /home/Work/FStar
 ENV KREMLIN_HOME /home/Work/kremlin
-RUN opam config exec -- make -C test snapshot
+ENV FSTAR_HOME /home/Work/hacl-star
+
+# Run extraction for Curve25519
+RUN opam config exec -- make -C code/curve25519 extract-c
+
+# Produce artifacts for NSS
 WORKDIR /home/Work
+RUN mkdir artifacts
+RUN cp hacl-star/snapshots/nss/kremlib.h artifacts
+RUN cp hacl-star/code/curve25519-c/* artifacts
