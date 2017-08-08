@@ -16,7 +16,7 @@ BIGNUM_FILES= \
 	Hacl.Bignum.Fscalar.fst \
 	Hacl.Bignum.Fproduct.fst \
 	Hacl.Bignum.Fmul.fst \
-	Hacl.Bignum.fst 
+	Hacl.Bignum.fst
 #	Hacl.Bignum.Constants.fsti \
 	Hacl.Bignum.Parameters.fsti \
 	Hacl.Bignum.Modulo.fsti \
@@ -24,12 +24,14 @@ BIGNUM_FILES= \
 
 FSTAR_INCLUDES+=--include interfaces --include ../lib
 
-ct: $(addsuffix -lax, $(BIGNUM_FILES))
+lax: $(addsuffix -lax, $(BIGNUM_FILES))
+ct: $(addsuffix -ct, $(BIGNUM_FILES))
 verify: $(addsuffix -verify, $(BIGNUM_FILES))
 hints: $(addsuffix .hints, $(BIGNUM_FILES))
 test:
 
 all-ci: verify
+all-lax: lax
 all-ver: verify
 all-hints: hints
 all-ct: ct

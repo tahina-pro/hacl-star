@@ -23,14 +23,15 @@ BROKEN=
 
 # For CI, all modules restricted from incomplete or slow ones
 ci: $(addsuffix -verify, $(filter-out $(SLOW) $(BROKEN), $(SALSA_FAMILY_FILES)))
-ct: $(addsuffix -lax, $(SALSA_FAMILY_FILES)) 
+lax: $(addsuffix -lax, $(SALSA_FAMILY_FILES))
+ct: $(addsuffix -ct, $(SALSA_FAMILY_FILES))
 	# Using the --verify_all argument to lift abstractions, typechecks all dependencies of Curve25519.fst
 	$(FSTAR) --lax --verify_all Chacha20.fst Salsa20.fst Chacha20.Vec128.fst
 verify: $(addsuffix -verify, $(SALSA_FAMILY_FILES))
 hints: $(addsuffix .hints, $(filter-out $(BROKEN), $(SALSA_FAMILY_FILES)))
-
 all-ci: ci
 all-ct: ct
+all-lax: lax
 all-hints: hints
 all-ver: verify
 

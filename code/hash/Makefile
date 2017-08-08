@@ -11,9 +11,12 @@ SHA2_FILES = \
 	Hacl.Hash.SHA2_256.Lemmas.fst \
 	Hacl.Hash.SHA2_256.fst
 
-ct: $(addsuffix -lax, $(SHA2_FILES))
+
+lax: $(addsuffix -lax, $(SHA2_FILES))
 verify: $(addsuffix -verify, $(SHA2_FILES))
+ct: $(addsuffix -ct, $(SHA2_FILES))
 hints: $(addsuffix .hints, $(SHA2_FILES))
+all-lax: lax
 all-ct: ct
 all-ver: verify
 all-ci: verify
@@ -60,7 +63,7 @@ test-sha2_%.exe: sha2-c/out.krml
 	$^ -o $@
 	./$@
 
-# The following 'native' test targets use CC and CFLAGS, which may be different from the compiler and 
+# The following 'native' test targets use CC and CFLAGS, which may be different from the compiler and
 # flags that Kremlin uses/chooses. So, use with care.
 
 test-native: test-native-sha2_256.exe test-native-sha2_384.exe test-native-sha2_512.exe
@@ -81,7 +84,6 @@ test-native-sha2_384.exe: sha2-c/SHA2_384.o sha2-c/Hacl_Test_SHA2_384.o $(BASE_O
 
 test-native-sha2_512.exe: sha2-c/SHA2_512.o sha2-c/Hacl_Test_SHA2_512.o $(BASE_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
-
 
 
 clean:

@@ -109,7 +109,7 @@ ED25519_CT_MODULES= \
 	Hacl.Impl.Ed25519.Sign.Steps.fst \
 	Hacl.Impl.Ed25519.SecretToPublic.fsti \
 	Hacl.Impl.Ed25519.SecretToPublic.fst \
-	Hacl.Impl.Ed25519.Sign.fst 
+	Hacl.Impl.Ed25519.Sign.fst
 
 FSTS=   Hacl.Bignum25519.fst \
 	../hash/Hacl.Impl.SHA512.Ed25519.fst \
@@ -141,12 +141,16 @@ SLOW=
 # Files that still have errors
 TODO=
 
-ED25519_FILES=$(ED25519_SPECIFIC) $(BIGNUM) 
+ED25519_FILES=$(ED25519_SPECIFIC) $(BIGNUM)
 
 FSTAR_INCLUDES+=--include $(HACL_HOME)/code/bignum --include $(HACL_HOME)/code/curve25519 --include $(HACL_HOME)/code/hash
 
 ct: $(addsuffix -lax, $(ED25519_FILES))
-	$(FSTAR) --lax --verify_all Hacl.Impl.Ed25519.SecretToPublic.fst Hacl.Impl.Ed25519.Sign.fst 
+	$(FSTAR) --lax --verify_all Hacl.Impl.Ed25519.SecretToPublic.fst Hacl.Impl.Ed25519.Sign.fst
+lax: $(addsuffix -lax, $(ED25519_FILES))
+	$(FSTAR) --lax --verify_all Hacl.Impl.Ed25519.SecretToPublic.fst Hacl.Impl.Ed25519.Sign.fst
+
+all-lax: lax
 all-ct: ct
 
 bignum-ver: $(addsuffix -reloc-verify, $(BIGNUM))
@@ -155,7 +159,7 @@ verify: bignum-ver specific-ver
 hints: bignum-hints specific-hints
 all-ver: verify
 
-# Hints regeneration                                                          
+# Hints regeneration
 bignum-hints: $(addsuffix .reloc.hints, $(BIGNUM))
 specific-hints: $(addsuffix .hints, $(ED25519_SPECIFIC))
 hints: bignum-hints specific-hints

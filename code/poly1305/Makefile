@@ -41,13 +41,19 @@ ct: $(addsuffix -lax, $(POLY1305_FILES))
 	# Using the --verify_all argument to lift abstractions, typechecks all dependencies of Curve25519.fst
 	$(FSTAR) --lax --verify_all Poly1305_64.fst
 
+lax: $(addsuffix -lax, $(POLY1305_FILES))
+	# Using the --verify_all argument to lift abstractions, typechecks all dependencies of Curve25519.fst
+	$(FSTAR) --lax --verify_all Poly1305_64.fst
+
 bignum-ver: $(addsuffix -reloc-verify, $(BIGNUM))
 specific-ver: $(addsuffix -verify, $(POLY1305_SPECIFIC))
 verify: bignum-ver specific-ver
 all-ver: verify
+
+all-lax: lax
 all-ct: ct
 
-# Hints regeneration                                                          
+# Hints regeneration
 bignum-hints: $(addsuffix .reloc.hints, $(BIGNUM))
 specific-hints: $(addsuffix .hints, $(POLY1305_SPECIFIC))
 hints: bignum-hints specific-hints
