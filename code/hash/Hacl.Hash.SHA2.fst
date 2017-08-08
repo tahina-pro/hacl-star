@@ -9,9 +9,6 @@ open FStar.Ghost
 open FStar.HyperStack
 open FStar.HyperStack.ST
 open FStar.Buffer
-// open Hacl.Cast
-// open Hacl.UInt8
-// open Hacl.UInt32
 open FStar.UInt32
 open C.Loops
 
@@ -142,6 +139,7 @@ let size_whash_w = size_hash_w
 
 (* Define the space taken by the counter in the state *)
 let size_count_w = 1ul
+let counter_w (a:hash_alg) = m:Buffer.buffer (word a){length m = UInt32.v size_count_w}
 
 (* Sizes of objects in the state *)
 inline_for_extraction let size_state a = size_k_w a +^ size_ws_w a +^ size_whash_w +^ size_count_w
@@ -714,15 +712,15 @@ let update_core a hash_w data data_w ws_w k_w =
 [@"substitute"]
 val counter_increment:
   a: hash_alg ->
-  counter_w :word a ->
+  counter_w :counter_w a ->
   Stack unit
         (requires (fun h -> live h counter_w
                   /\ (let counter = Seq.index (as_seq h counter_w) 0 in
-                  (word_v a counter) < ((Spec.pow2_values a) - 1))))
+                  (word_v a counter) < ((Spec.max_pow2 a) - 1))))
         (ensures  (fun h0 _ h1 -> live h1 counter_w /\ live h0 counter_w /\ modifies_1 counter_w h0 h1
                   /\ (let counter_0 = Seq.index (as_seq h0 counter_w) 0 in
                   let counter_1 = Seq.index (as_seq h1 counter_w) 0 in
-                  word_v a counter_1 = word_v a counter_0 + 1 /\ word_v counter_1 < Spec.pow2_values a)))
+                  word_v a counter_1 = word_v a counter_0 + 1 /\ word_v a counter_1 < Spec.max_pow2 a)))
 
 [@"substitute"]
 let counter_increment a counter_w =
@@ -731,74 +729,73 @@ let counter_increment a counter_w =
   counter_w.(0ul) <- (Spec.word_add_mod c0 one)
 
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 75"
-
 val update:
-  state :uint64_p {length state = v size_state} ->
-  data  :uint8_p  {length data = v size_block /\ disjoint state data} ->
+  a: hash_alg ->
+  state :state a ->
+  data  :block a{disjoint state data} ->
   Stack unit
         (requires (fun h0 -> live h0 state /\ live h0 data
-                  /\ (let seq_k = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
-                  let seq_counter = Seq.slice (as_seq h0 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)) in
+                  /\ (let seq_k = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + word_v a (size_k_w a))) in
+                  let seq_counter = Seq.slice (as_seq h0 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)) in
                   let counter = Seq.index seq_counter 0 in
-                  reveal_h64s seq_k == Spec.k0 a /\ H64.v counter < (Spec.pow2_values a - 1))))
+                  buffer_reveal a seq_k == Spec.k0 a /\ (word_v a counter) < (Spec.max_pow2 a - 1))))
         (ensures  (fun h0 r h1 -> live h0 state /\ live h0 data /\ live h1 state /\ modifies_1 state h0 h1
-                  /\ (let seq_hash_0 = Seq.slice (as_seq h0 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)) in
-                  let seq_hash_1 = Seq.slice (as_seq h1 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)) in
-                  let seq_k_0 = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
-                  let seq_k_1 = Seq.slice (as_seq h1 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
+                  /\ (let seq_hash_0 = Seq.slice (as_seq h0 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)) in
+                  let seq_hash_1 = Seq.slice (as_seq h1 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)) in
+                  let seq_k_0 = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v (size_k_w a))) in
+                  let seq_k_1 = Seq.slice (as_seq h1 state) (U32.v pos_k_w) (U32.(v pos_k_w + v (size_k_w a))) in
                   let seq_block = as_seq h0 data in
-                  let seq_counter_0 = Seq.slice (as_seq h0 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)) in
-                  let seq_counter_1 = Seq.slice (as_seq h1 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)) in
+                  let seq_counter_0 = Seq.slice (as_seq h0 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)) in
+                  let seq_counter_1 = Seq.slice (as_seq h1 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)) in
                   let counter_0 = Seq.index seq_counter_0 0 in
                   let counter_1 = Seq.index seq_counter_1 0 in
                   seq_k_0 == seq_k_1
-                  /\ H64.v counter_1 = H64.v counter_0 + 1 /\ H64.v counter_1 < pow2 64
-                  /\ reveal_h64s seq_hash_1 == Spec.update (reveal_h64s seq_hash_0) (reveal_sbytes seq_block))))
+                  /\ word_v a counter_1 = word_v a counter_0 + 1 /\ word_v a counter_1 < Spec.max_pow2 a
+                  /\ buffer_reveal a seq_hash_1 == Spec.update a (buffer_reveal a seq_hash_0) (reveal_sbytes seq_block))))
 
 #reset-options "--z3refresh --max_fuel 0  --z3rlimit 250"
 
-let update state data =
+let update a state data =
 
   (* Push a new frame *)
   (**) let h0 = ST.get () in
   (**) push_frame();
   (**) let h1 = ST.get () in
-  (**) Lemmas.lemma_eq_state_k_sub_slice h1 state;
-  (**) Seq.lemma_eq_intro (Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)))
-  (**)                    (Seq.slice (as_seq h1 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)));
-  (**) Lemmas.lemma_eq_state_counter_sub_slice h1 state;
-  (**) Seq.lemma_eq_intro (Seq.slice (as_seq h0 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)))
-                          (Seq.slice (as_seq h1 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)));
-  (**) Lemmas.lemma_eq_state_hash_sub_slice h1 state;
-  (**) Seq.lemma_eq_intro (Seq.slice (as_seq h0 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)))
-                          (Seq.slice (as_seq h1 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)));
+//  (**) Lemmas.lemma_eq_state_k_sub_slice h1 state;
+  (**) Seq.lemma_eq_intro (Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v (size_k_w a))))
+  (**)                    (Seq.slice (as_seq h1 state) (U32.v pos_k_w) (U32.(v pos_k_w + v (size_k_w a))));
+//  (**) Lemmas.lemma_eq_state_counter_sub_slice h1 state;
+  (**) Seq.lemma_eq_intro (Seq.slice (as_seq h0 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)))
+                          (Seq.slice (as_seq h1 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)));
+//  (**) Lemmas.lemma_eq_state_hash_sub_slice h1 state;
+  (**) Seq.lemma_eq_intro (Seq.slice (as_seq h0 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)))
+                          (Seq.slice (as_seq h1 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a)+ v size_whash_w)));
 
   (* Allocate space for converting the data block *)
   let data_w = Buffer.create (u32_to_h64 0ul) size_block_w in
   (**) let h2 = ST.get () in
   (**) no_upd_lemma_0 h1 h2 data;
-  (**) no_upd_lemma_0 h1 h2 (Buffer.sub state pos_k_w size_k_w);
-  (**) no_upd_lemma_0 h1 h2 (Buffer.sub state pos_whash_w size_whash_w);
-  (**) no_upd_lemma_0 h1 h2 (Buffer.sub state pos_count_w size_count_w);
+  (**) no_upd_lemma_0 h1 h2 (Buffer.sub state pos_k_w (size_k_w a));
+  (**) no_upd_lemma_0 h1 h2 (Buffer.sub state (pos_whash_w a) size_whash_w);
+  (**) no_upd_lemma_0 h1 h2 (Buffer.sub state (pos_count_w a) size_count_w);
 
   (* Cast the data bytes into a uint32_t buffer *)
   uint64s_from_be_bytes data_w data size_block_w;
   (**) let h3 = ST.get () in
-  (**) no_upd_lemma_1 h2 h3 data_w (Buffer.sub state pos_k_w size_k_w);
-  (**) no_upd_lemma_1 h2 h3 data_w (Buffer.sub state pos_whash_w size_whash_w);
-  (**) no_upd_lemma_1 h2 h3 data_w (Buffer.sub state pos_count_w size_count_w);
+  (**) no_upd_lemma_1 h2 h3 data_w (Buffer.sub state pos_k_w (size_k_w a));
+  (**) no_upd_lemma_1 h2 h3 data_w (Buffer.sub state (pos_whash_w a) size_whash_w);
+  (**) no_upd_lemma_1 h2 h3 data_w (Buffer.sub state (pos_count_w a) size_count_w);
   (**) no_upd_lemma_1 h2 h3 data_w data;
   (**) assert(reveal_h64s (as_seq h3 data_w) == Spec.Lib.uint64s_from_be (U32.v size_block_w) (reveal_sbytes (as_seq h3 data)));
 
   (* Retreive values from the state *)
-  let hash_w = Buffer.sub state pos_whash_w size_whash_w in
-  let ws_w = Buffer.sub state pos_ws_w size_ws_w in
-  let k_w = Buffer.sub state pos_k_w size_k_w in
-  let counter_w = Buffer.sub state pos_count_w size_count_w in
+  let hash_w = Buffer.sub state (pos_whash_w a) size_whash_w in
+  let ws_w = Buffer.sub state (pos_ws_w a) (size_ws_w a) in
+  let k_w = Buffer.sub state pos_k_w (size_k_w a) in
+  let counter_w = Buffer.sub state (pos_count_w a) size_count_w in
 
   (* Step 1 : Scheduling function for sixty-four 32 bit words *)
-  ws ws_w data_w;
+  ws a ws_w data_w;
   (**) let h4 = ST.get () in
   (**) no_upd_lemma_1 h3 h4 ws_w data;
   (**) no_upd_lemma_1 h3 h4 ws_w k_w;
@@ -808,108 +805,111 @@ let update state data =
   (* Step 2 : Initialize the eight working variables *)
   (* Step 3 : Perform logical operations on the working variables *)
   (* Step 4 : Compute the ith intermediate hash value *)
-  (**) assert(reveal_h64s (as_seq h4 k_w) == Spec.k);
-  update_core hash_w data data_w ws_w k_w;
+  (**) assert(reveal_h64s (as_seq h4 k_w) == Spec.k0 a);
+  update_core a hash_w data data_w ws_w k_w;
   (**) let h5 = ST.get () in
   (**) no_upd_lemma_1 h4 h5 hash_w data;
   (**) no_upd_lemma_1 h4 h5 hash_w k_w;
   (**) no_upd_lemma_1 h4 h5 hash_w counter_w;
-  (**) Lemmas.lemma_eq_state_k_sub_slice h5 state;
-  (**) Lemmas.lemma_eq_state_counter_sub_slice h5 state;
-  (**) Lemmas.lemma_eq_state_hash_sub_slice h5 state;
+  // (**) Lemmas.lemma_eq_state_k_sub_slice h5 state;
+  // (**) Lemmas.lemma_eq_state_counter_sub_slice h5 state;
+  // (**) Lemmas.lemma_eq_state_hash_sub_slice h5 state;
   (**) Seq.lemma_eq_intro (as_seq h1 hash_w) (as_seq h4 hash_w);
   (**) Seq.lemma_eq_intro (as_seq h1 data) (as_seq h4 data);
-  (**) assert(reveal_h64s (as_seq h5 hash_w) == Spec.update (reveal_h64s (as_seq h0 hash_w)) (reveal_sbytes (as_seq h0 data)));
+  (**) assert(reveal_h64s (as_seq h5 hash_w) == Spec.update a (buffer_reveal a (as_seq h0 hash_w)) (reveal_sbytes (as_seq h0 data)));
 
   (* Increment the total number of blocks processed *)
-  counter_increment counter_w;
+  counter_increment a counter_w;
   (**) let h6 = ST.get () in
   (**) no_upd_lemma_1 h5 h6 counter_w data;
   (**) no_upd_lemma_1 h5 h6 counter_w k_w;
   (**) no_upd_lemma_1 h5 h6 counter_w hash_w;
-  (**) Lemmas.lemma_eq_state_k_sub_slice h6 state;
-  (**) Lemmas.lemma_eq_state_counter_sub_slice h6 state;
-  (**) Lemmas.lemma_eq_state_hash_sub_slice h6 state;
-  (**) assert(let seq_k_0 = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
-              let seq_k_1 = Seq.slice (as_seq h6 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
+  // (**) Lemmas.lemma_eq_state_k_sub_slice h6 state;
+  // (**) Lemmas.lemma_eq_state_counter_sub_slice h6 state;
+  // (**) Lemmas.lemma_eq_state_hash_sub_slice h6 state;
+  (**) assert(let seq_k_0 = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v (size_k_w a))) in
+              let seq_k_1 = Seq.slice (as_seq h6 state) (U32.v pos_k_w) (U32.(v pos_k_w + v (size_k_w a))) in
               seq_k_0 == seq_k_1);
-  (**) assert(let seq_counter_0 = Seq.slice (as_seq h0 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)) in
-                  let seq_counter_1 = Seq.slice (as_seq h6 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)) in
+  (**) assert(let seq_counter_0 = Seq.slice (as_seq h0 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)) in
+                  let seq_counter_1 = Seq.slice (as_seq h6 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)) in
                   let counter_0 = Seq.index seq_counter_0 0 in
                   let counter_1 = Seq.index seq_counter_1 0 in
                   H64.v counter_1 = H64.v counter_0 + 1 /\ H64.v counter_1 < pow2 64);
-  (**) assert(let seq_hash_0 = Seq.slice (as_seq h0 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)) in
-                  let seq_hash_1 = Seq.slice (as_seq h6 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)) in
+  (**) assert(let seq_hash_0 = Seq.slice (as_seq h0 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)) in
+                  let seq_hash_1 = Seq.slice (as_seq h6 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)) in
                   let seq_block = as_seq h0 data in
-                  reveal_h64s seq_hash_1 == Spec.update (reveal_h64s seq_hash_0) (reveal_sbytes seq_block));
+                  buffer_reveal a seq_hash_1 == Spec.update a (buffer_reveal a seq_hash_0) (reveal_sbytes seq_block));
 
   (* Pop the memory frame *)
   (**) pop_frame();
   (**) let h7 = ST.get () in
-  (**) Seq.lemma_eq_intro (Seq.slice (as_seq h6 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)))
-                          (Seq.slice (as_seq h7 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)));
-  (**) Seq.lemma_eq_intro (Seq.slice (as_seq h6 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)))
-                          (Seq.slice (as_seq h7 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)));
-  (**) Seq.lemma_eq_intro (Seq.slice (as_seq h6 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)))
-                          (Seq.slice (as_seq h7 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)))
+  (**) Seq.lemma_eq_intro (Seq.slice (as_seq h6 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)))
+                          (Seq.slice (as_seq h7 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)));
+  (**) Seq.lemma_eq_intro (Seq.slice (as_seq h6 state) (U32.v pos_k_w) (U32.(v pos_k_w + v (size_k_w a))))
+                          (Seq.slice (as_seq h7 state) (U32.v pos_k_w) (U32.(v pos_k_w + v (size_k_w a))));
+  (**) Seq.lemma_eq_intro (Seq.slice (as_seq h6 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)))
+                          (Seq.slice (as_seq h7 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)))
 
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 100"
 
 val update_multi:
-  state :uint64_p{length state = v size_state} ->
-  data  :uint8_p {length data % v size_block = 0 /\ disjoint state data} ->
-  n     :uint32_t{v n * v size_block = length data} ->
+  a : hash_alg ->
+  state :state a->
+  data  :block a{disjoint state data} ->
+  n     :counter_w a{word_v a n * v (size_block a) = length data} ->
   Stack unit
         (requires (fun h0 -> live h0 state /\ live h0 data
-                  /\ (let seq_k = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
-                  let seq_counter = Seq.slice (as_seq h0 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)) in
+                  /\ (let seq_k = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v (size_k_w a))) in
+                  let seq_counter = Seq.slice (as_seq h0 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)) in
                   let counter = Seq.index seq_counter 0 in
-                  reveal_h64s seq_k == Spec.k /\ H64.v counter < (pow2 64 - (v n)))))
+                  buffer_reveal a seq_k == Spec.k0 a /\ word_v a counter < (Spec.max_pow2 a - (word_v a n)))))
         (ensures  (fun h0 _ h1 -> live h0 state /\ live h0 data /\ live h1 state /\ modifies_1 state h0 h1
-                  /\ (let seq_hash_0 = Seq.slice (as_seq h0 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)) in
-                  let seq_hash_1 = Seq.slice (as_seq h1 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)) in
-                  let seq_k_0 = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
-                  let seq_k_1 = Seq.slice (as_seq h1 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
+                  /\ (let seq_hash_0 = Seq.slice (as_seq h0 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)) in
+                  let seq_hash_1 = Seq.slice (as_seq h1 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)) in
+                  let seq_k_0 = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v (size_k_w a))) in
+                  let seq_k_1 = Seq.slice (as_seq h1 state) (U32.v pos_k_w) (U32.(v pos_k_w + v (size_k_w a))) in
                   let seq_blocks = as_seq h0 data in
-                  let seq_counter_0 = Seq.slice (as_seq h0 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)) in
-                  let seq_counter_1 = Seq.slice (as_seq h1 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)) in
+                  let seq_counter_0 = Seq.slice (as_seq h0 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)) in
+                  let seq_counter_1 = Seq.slice (as_seq h1 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)) in
                   let counter_0 = Seq.index seq_counter_0 0 in
                   let counter_1 = Seq.index seq_counter_1 0 in
                   seq_k_0 == seq_k_1
-                  /\ H64.v counter_1 = H64.v counter_0 + (v n) /\ H64.v counter_1 < pow2 64
-                  /\ reveal_h64s seq_hash_1 == Spec.update_multi (reveal_h64s seq_hash_0) (reveal_sbytes seq_blocks))))
+                  /\ word_v a counter_1 = word_v a counter_0 + (word_v a n) /\ word_v a counter_1 < Spec.max_pow2 a
+                  /\ buffer_reveal a seq_hash_1 == Spec.update_multi a (buffer_reveal a seq_hash_0) (reveal_sbytes seq_blocks))))
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 200"
 
-let rec update_multi state data n =
+let is_equal_zero a:hash_alg -> Tot (word a -> word a -> Tot bool) = function
+  | SHA2_224 | SHA2_256 -> UInt32.eq
+  | SHA2_224 | SHA2_256 -> UInt64.eq
+
+
+let rec update_multi a state data n =
   (**) let h0 = ST.get() in
-  if n =^ 0ul then (
-    (**) assert (v n = 0);
-    (**) Lemmas.lemma_aux_1 (v n) (v size_block);
-    (**) assert (length data = 0);
-    (**) Lemmas.lemma_modifies_0_is_modifies_1 h0 state;
-    (**) Lemmas.lemma_update_multi_def (reveal_h64s (Seq.slice (as_seq h0 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)))) (reveal_sbytes (as_seq h0 data))
-  )
+  if is_equal_zero n then ()
+//    (**) assert (v n = 0);
+//    (**) Lemmas.lemma_aux_1 (v n) (v size_block);
+//    (**) assert (length data = 0);
+//    (**) Lemmas.lemma_modifies_0_is_modifies_1 h0 state;
+//    (**) Lemmas.lemma_update_multi_def (reveal_h64s (Seq.slice (as_seq h0 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)))) (reveal_sbytes (as_seq h0 data))
+//  )
   else
     begin
-    (**) assert(v n > 0);
-    (**) Lemmas.lemma_aux_2 (v n) (v size_block);
-    (**) assert(length data > 0);
-    (**) Lemmas.lemma_update_multi_def (reveal_h64s (Seq.slice (as_seq h0 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)))) (reveal_sbytes (as_seq h0 data));
+//    (**) assert(v n > 0);
+//    (**) Lemmas.lemma_aux_2 (v n) (v size_block);
+//    (**) assert(length data > 0);
+//    (**) Lemmas.lemma_update_multi_def (reveal_h64s (Seq.slice (as_seq h0 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)))) (reveal_sbytes (as_seq h0 data));
 
     (* Get the current block for the data *)
-    let b = Buffer.sub data 0ul size_block in
+    let b = Buffer.sub data 0ul (size_block a) in
 
     (* Remove the current block from the data left to process *)
-    let data = Buffer.offset data size_block in
+    let data = Buffer.offset data (size_block a) in
     (**) assert(disjoint b data);
 
     (* Call the update function on the current block *)
-    update state b;
+    update state a b;
 
     (* Recursive call *)
-    update_multi state data (n -^ 1ul) end
+    update_multi a state data (n -^ 1ul) end
 
 
 #reset-options "--z3refresh --max_fuel 0  --z3rlimit 50"
@@ -1086,15 +1086,15 @@ val update_last:
   Stack unit
         (requires (fun h0 -> live h0 state /\ live h0 data
                   /\ (let seq_k = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
-                  let seq_counter = Seq.slice (as_seq h0 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)) in
+                  let seq_counter = Seq.slice (as_seq h0 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)) in
                   let counter = Seq.index seq_counter 0 in
                   let nb = U64.div len (u32_to_u64 size_block) in
                   reveal_h64s seq_k == Spec.k /\ H64.v counter < (pow2 64 - 2))))
         (ensures  (fun h0 r h1 -> live h0 state /\ live h0 data /\ live h1 state /\ modifies_1 state h0 h1
-                  /\ (let seq_hash_0 = Seq.slice (as_seq h0 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)) in
-                  let seq_hash_1 = Seq.slice (as_seq h1 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)) in
+                  /\ (let seq_hash_0 = Seq.slice (as_seq h0 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)) in
+                  let seq_hash_1 = Seq.slice (as_seq h1 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)) in
                   let seq_data = reveal_sbytes (as_seq h0 data) in
-                  let count = Seq.slice (as_seq h0 state) (U32.v pos_count_w) (U32.v pos_count_w + 1) in
+                  let count = Seq.slice (as_seq h0 state) (U32.v (pos_count_w a)) (U32.v (pos_count_w a) + 1) in
                   let prevlen = H64.((H64.v (Seq.index count 0)) * (U32.v size_block)) in
                   reveal_h64s seq_hash_1 == Spec.update_last (reveal_h64s seq_hash_0) prevlen seq_data)))
 
@@ -1144,7 +1144,7 @@ let update_last state data len =
   (**) assert(as_seq h3 data == Seq.slice (as_seq h3 final_blocks) 0 (U64.v len));
 
   (* Compute the final length of the data *)
-  let n = state.(pos_count_w) in
+  let n = state.((pos_count_w a)) in
 
   (* Set the padding *)
   let padding = Buffer.offset final_blocks (u64_to_u32 len) in
@@ -1175,7 +1175,7 @@ let update_last state data len =
   (**) assert(v nb * v size_block = length final_blocks);
   (**) assert(live h4 state /\ live h4 final_blocks);
   (**) assert(let seq_k = Seq.slice (as_seq h4 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
-              let seq_counter = Seq.slice (as_seq h4 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)) in
+              let seq_counter = Seq.slice (as_seq h4 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)) in
               let counter = Seq.index seq_counter 0 in
               reveal_h64s seq_k == Spec.k /\ H64.v counter < (pow2 64 - 2));
 
@@ -1212,12 +1212,12 @@ val finish:
   Stack unit
         (requires (fun h0 -> live h0 state /\ live h0 hash))
         (ensures  (fun h0 _ h1 -> live h0 state /\ live h1 hash /\ modifies_1 hash h0 h1
-                  /\ (let seq_hash_w = Seq.slice (as_seq h0 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)) in
+                  /\ (let seq_hash_w = Seq.slice (as_seq h0 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)) in
                   let seq_hash = reveal_sbytes (as_seq h1 hash) in
                   seq_hash = Spec.finish (reveal_h64s seq_hash_w))))
 
 let finish state hash =
-  let hash_w = Buffer.sub state pos_whash_w size_whash_w in
+  let hash_w = Buffer.sub state (pos_whash_w a) size_whash_w in
   finish_core hash_w hash
 
 

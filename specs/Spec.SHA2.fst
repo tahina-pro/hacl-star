@@ -86,6 +86,10 @@ let max_input8: hash_alg -> Tot nat = function
   | SHA2_224 | SHA2_256 -> pow2 61
   | SHA2_384 | SHA2_512 -> pow2 125
 
+let max_pow2: hash_alg -> Tot nat = function
+  | SHA2_224 | SHA2_256 -> pow2 64
+  | SHA2_384 | SHA2_512 -> pow2 128
+
 (* Definition of main types *)
 type bytes = m:Seq.seq UInt8.t
 
