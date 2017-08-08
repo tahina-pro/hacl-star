@@ -190,33 +190,6 @@ let aux_hupd_64 buf v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v1
 
 
 [@"substitute"]
-val hupd_64: buf:uint32_p{length buf = 64} ->
-  v0:H32.t -> v1:H32.t -> v2:H32.t -> v3:H32.t -> v4:H32.t -> v5:H32.t -> v6:H32.t -> v7:H32.t ->
-  v8:H32.t -> v9:H32.t ->
-  v10:H32.t -> v11:H32.t -> v12:H32.t -> v13:H32.t -> v14:H32.t -> v15:H32.t -> v16:H32.t -> v17:H32.t ->
-  v18:H32.t -> v19:H32.t ->
-  v20:H32.t -> v21:H32.t -> v22:H32.t -> v23:H32.t -> v24:H32.t -> v25:H32.t -> v26:H32.t -> v27:H32.t ->
-  v28:H32.t -> v29:H32.t ->
-  v30:H32.t -> v31:H32.t -> v32:H32.t -> v33:H32.t -> v34:H32.t -> v35:H32.t -> v36:H32.t -> v37:H32.t ->
-  v38:H32.t -> v39:H32.t ->
-  v40:H32.t -> v41:H32.t -> v42:H32.t -> v43:H32.t -> v44:H32.t -> v45:H32.t -> v46:H32.t -> v47:H32.t ->
-  v48:H32.t -> v49:H32.t ->
-  v50:H32.t -> v51:H32.t -> v52:H32.t -> v53:H32.t -> v54:H32.t -> v55:H32.t -> v56:H32.t -> v57:H32.t ->
-  v58:H32.t -> v59:H32.t ->
-  v60:H32.t -> v61:H32.t -> v62:H32.t -> v63:H32.t ->
-  Stack unit (requires (fun h -> live h buf))
-             (ensures  (fun h0 _ h1 -> live h1 buf /\ modifies_1 buf h0 h1
-                         /\ (let s = as_seq h1 buf in
-                         Seq.Create.create_64  v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49 v50 v51 v52 v53 v54 v55 v56 v57 v58 v59 v60 v61 v62 v63 == s)))
-
-[@"substitute"]
-let hupd_64 buf v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49 v50 v51 v52 v53 v54 v55 v56 v57 v58 v59 v60 v61 v62 v63 =
-  aux_hupd_64 buf v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49 v50 v51 v52 v53 v54 v55 v56 v57 v58 v59 v60 v61 v62 v63;
-  let h1 = ST.get () in
-  Seq.lemma_eq_intro (as_seq h1 buf) (Seq.Create.create_64 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49 v50 v51 v52 v53 v54 v55 v56 v57 v58 v59 v60 v61 v62 v63)
-
-
-[@"substitute"]
 val hupd64_4: buf:uint64_p{length buf = 4} ->
   v0:H64.t -> v1:H64.t -> v2:H64.t -> v3:H64.t ->
   Stack unit (requires (fun h -> live h buf))
@@ -359,33 +332,83 @@ let aux_hupd64_80 buf v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 
   hupd64_16 p5 v64 v65 v66 v67 v68 v69 v70 v71 v72 v73 v74 v75 v76 v77 v78 v79
 
 
-#reset-options "--max_fuel 0 --z3rlimit 25"
 
-[@"substitute"]
-val hupd64_80: buf:uint64_p{length buf = 80} ->
+
+//
+//
+//
+
+let update_32bit_8_t = buf:uint32_p{length buf = 8} ->
+  v0:H32.t -> v1:H32.t -> v2:H32.t -> v3:H32.t -> v4:H32.t -> v5:H32.t -> v6:H32.t -> v7:H32.t ->
+  Stack unit (requires (fun h -> live h buf))
+             (ensures  (fun h0 _ h1 -> live h1 buf /\ modifies_1 buf h0 h1
+                         /\ (let s = as_seq h1 buf in Seq.Create.create_8 v0 v1 v2 v3 v4 v5 v6 v7 == s)))
+
+val update_32bit_8 : update_32bit_8_t
+let update_32bit_8 buf v0 v1 v2 v3 v4 v5 v6 v7 =
+  aux_hupd_8 buf v0 v1 v2 v3 v4 v5 v6 v7;
+  let h1 = ST.get () in
+  Seq.lemma_eq_intro (as_seq h1 buf) (Seq.Create.create_8 v0 v1 v2 v3 v4 v5 v6 v7)
+
+//
+//
+//
+
+let update_64bit_8_t = buf:uint64_p{length buf = 8} ->
   v0:H64.t -> v1:H64.t -> v2:H64.t -> v3:H64.t -> v4:H64.t -> v5:H64.t -> v6:H64.t -> v7:H64.t ->
-  v8:H64.t -> v9:H64.t ->
-  v10:H64.t -> v11:H64.t -> v12:H64.t -> v13:H64.t -> v14:H64.t -> v15:H64.t -> v16:H64.t -> v17:H64.t ->
-  v18:H64.t -> v19:H64.t ->
-  v20:H64.t -> v21:H64.t -> v22:H64.t -> v23:H64.t -> v24:H64.t -> v25:H64.t -> v26:H64.t -> v27:H64.t ->
-  v28:H64.t -> v29:H64.t ->
-  v30:H64.t -> v31:H64.t -> v32:H64.t -> v33:H64.t -> v34:H64.t -> v35:H64.t -> v36:H64.t -> v37:H64.t ->
-  v38:H64.t -> v39:H64.t ->
-  v40:H64.t -> v41:H64.t -> v42:H64.t -> v43:H64.t -> v44:H64.t -> v45:H64.t -> v46:H64.t -> v47:H64.t ->
-  v48:H64.t -> v49:H64.t ->
-  v50:H64.t -> v51:H64.t -> v52:H64.t -> v53:H64.t -> v54:H64.t -> v55:H64.t -> v56:H64.t -> v57:H64.t ->
-  v58:H64.t -> v59:H64.t ->
-  v60:H64.t -> v61:H64.t -> v62:H64.t -> v63:H64.t -> v64:H64.t -> v65:H64.t -> v66:H64.t -> v67:H64.t ->
-  v68:H64.t -> v69:H64.t ->
-  v70:H64.t -> v71:H64.t -> v72:H64.t -> v73:H64.t -> v74:H64.t -> v75:H64.t -> v76:H64.t -> v77:H64.t ->
-  v78:H64.t -> v79:H64.t ->
+  Stack unit (requires (fun h -> live h buf))
+             (ensures  (fun h0 _ h1 -> live h1 buf /\ modifies_1 buf h0 h1
+                         /\ (let s = as_seq h1 buf in Seq.Create.create_8 v0 v1 v2 v3 v4 v5 v6 v7 == s)))
+
+val update_64bit_8 : update_64bit_8_t
+let update_64bit_8 buf v0 v1 v2 v3 v4 v5 v6 v7 =
+  aux_hupd64_8 buf v0 v1 v2 v3 v4 v5 v6 v7;
+  let h1 = ST.get () in
+  Seq.lemma_eq_intro (as_seq h1 buf) (Seq.Create.create_8 v0 v1 v2 v3 v4 v5 v6 v7)
+
+//
+//
+//
+
+let update_32bit_64_t = buf:uint32_p{length buf = 64} ->
+  v0:H32.t  -> v1:H32.t  -> v2:H32.t  -> v3:H32.t  -> v4:H32.t  -> v5:H32.t  -> v6:H32.t  -> v7:H32.t  -> v8:H32.t  -> v9:H32.t ->
+  v10:H32.t -> v11:H32.t -> v12:H32.t -> v13:H32.t -> v14:H32.t -> v15:H32.t -> v16:H32.t -> v17:H32.t -> v18:H32.t -> v19:H32.t ->
+  v20:H32.t -> v21:H32.t -> v22:H32.t -> v23:H32.t -> v24:H32.t -> v25:H32.t -> v26:H32.t -> v27:H32.t -> v28:H32.t -> v29:H32.t ->
+  v30:H32.t -> v31:H32.t -> v32:H32.t -> v33:H32.t -> v34:H32.t -> v35:H32.t -> v36:H32.t -> v37:H32.t -> v38:H32.t -> v39:H32.t ->
+  v40:H32.t -> v41:H32.t -> v42:H32.t -> v43:H32.t -> v44:H32.t -> v45:H32.t -> v46:H32.t -> v47:H32.t -> v48:H32.t -> v49:H32.t ->
+  v50:H32.t -> v51:H32.t -> v52:H32.t -> v53:H32.t -> v54:H32.t -> v55:H32.t -> v56:H32.t -> v57:H32.t -> v58:H32.t -> v59:H32.t ->
+  v60:H32.t -> v61:H32.t -> v62:H32.t -> v63:H32.t ->
+  Stack unit (requires (fun h -> live h buf))
+             (ensures  (fun h0 _ h1 -> live h1 buf /\ modifies_1 buf h0 h1
+                         /\ (let s = as_seq h1 buf in
+                         Seq.Create.create_64  v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49 v50 v51 v52 v53 v54 v55 v56 v57 v58 v59 v60 v61 v62 v63 == s)))
+
+val update_32bit_64 : update_32bit_64_t
+let update_32bit_64 buf v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49 v50 v51 v52 v53 v54 v55 v56 v57 v58 v59 v60 v61 v62 v63 =
+  aux_hupd_64 buf v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49 v50 v51 v52 v53 v54 v55 v56 v57 v58 v59 v60 v61 v62 v63;
+  let h1 = ST.get () in
+  Seq.lemma_eq_intro (as_seq h1 buf) (Seq.Create.create_64 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49 v50 v51 v52 v53 v54 v55 v56 v57 v58 v59 v60 v61 v62 v63)
+
+//
+//
+//
+
+let update_64bit_80_t = buf:uint64_p{length buf = 80} ->
+  v0:H64.t  -> v1:H64.t  -> v2:H64.t  -> v3:H64.t  -> v4:H64.t  -> v5:H64.t  -> v6:H64.t  -> v7:H64.t  -> v8:H64.t  -> v9:H64.t ->
+  v10:H64.t -> v11:H64.t -> v12:H64.t -> v13:H64.t -> v14:H64.t -> v15:H64.t -> v16:H64.t -> v17:H64.t -> v18:H64.t -> v19:H64.t ->
+  v20:H64.t -> v21:H64.t -> v22:H64.t -> v23:H64.t -> v24:H64.t -> v25:H64.t -> v26:H64.t -> v27:H64.t -> v28:H64.t -> v29:H64.t ->
+  v30:H64.t -> v31:H64.t -> v32:H64.t -> v33:H64.t -> v34:H64.t -> v35:H64.t -> v36:H64.t -> v37:H64.t -> v38:H64.t -> v39:H64.t ->
+  v40:H64.t -> v41:H64.t -> v42:H64.t -> v43:H64.t -> v44:H64.t -> v45:H64.t -> v46:H64.t -> v47:H64.t -> v48:H64.t -> v49:H64.t ->
+  v50:H64.t -> v51:H64.t -> v52:H64.t -> v53:H64.t -> v54:H64.t -> v55:H64.t -> v56:H64.t -> v57:H64.t -> v58:H64.t -> v59:H64.t ->
+  v60:H64.t -> v61:H64.t -> v62:H64.t -> v63:H64.t -> v64:H64.t -> v65:H64.t -> v66:H64.t -> v67:H64.t -> v68:H64.t -> v69:H64.t ->
+  v70:H64.t -> v71:H64.t -> v72:H64.t -> v73:H64.t -> v74:H64.t -> v75:H64.t -> v76:H64.t -> v77:H64.t -> v78:H64.t -> v79:H64.t ->
   Stack unit (requires (fun h -> live h buf))
              (ensures  (fun h0 _ h1 -> live h1 buf /\ modifies_1 buf h0 h1
                          /\ (let s = as_seq h1 buf in
                          Seq.Create.create_80  v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49 v50 v51 v52 v53 v54 v55 v56 v57 v58 v59 v60 v61 v62 v63 v64 v65 v66 v67 v68 v69 v70 v71 v72 v73 v74 v75 v76 v77 v78 v79 == s)))
 
-[@"substitute"]
-let hupd64_80 buf v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49 v50 v51 v52 v53 v54 v55 v56 v57 v58 v59 v60 v61 v62 v63  v64 v65 v66 v67 v68 v69 v70 v71 v72 v73 v74 v75 v76 v77 v78 v79 =
+val update_64bit_80 : update_64bit_80_t
+let update_64bit_80 buf v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49 v50 v51 v52 v53 v54 v55 v56 v57 v58 v59 v60 v61 v62 v63  v64 v65 v66 v67 v68 v69 v70 v71 v72 v73 v74 v75 v76 v77 v78 v79 =
   aux_hupd64_80 buf v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49 v50 v51 v52 v53 v54 v55 v56 v57 v58 v59 v60 v61 v62 v63 v64 v65 v66 v67 v68 v69 v70 v71 v72 v73 v74 v75 v76 v77 v78 v79;
   let h1 = ST.get () in
   Seq.lemma_eq_intro (as_seq h1 buf) (Seq.Create.create_80 v0 v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 v17 v18 v19 v20 v21 v22 v23 v24 v25 v26 v27 v28 v29 v30 v31 v32 v33 v34 v35 v36 v37 v38 v39 v40 v41 v42 v43 v44 v45 v46 v47 v48 v49 v50 v51 v52 v53 v54 v55 v56 v57 v58 v59 v60 v61 v62 v63 v64 v65 v66 v67 v68 v69 v70 v71 v72 v73 v74 v75 v76 v77 v78 v79)

@@ -75,9 +75,10 @@ inline_for_extraction let  h64_to_h128 = Cast.sint64_to_sint128
 (* Definition of a word depending on the algorithm *)
 let word = Spec.word
 
-// let word_n: a:hash_alg -> Tot (z:UInt32.t{v z = Spec.word_n a}) = function
-//   | SHA2_224 | SHA2_256 -> 32ul
-//   | SHA2_384 | SHA2_512 -> 64ul
+let word_v: a:hash_alg -> Tot (word a -> Tot nat) = function
+  | SHA2_224 | SHA2_256 -> UInt32.v
+  | SHA2_384 | SHA2_512 -> UInt64.v
+
 
 (* List the Hash algorithms *)
 type hash_alg = Spec.SHA2.hash_alg
@@ -130,6 +131,7 @@ let hash_w  (a:hash_alg) = m:Buffer.buffer (word a){length m = Spec.size_hash_w}
 let k_w     (a:hash_alg) = m:Buffer.buffer (word a){length m = Spec.size_k_w a}
 let ws_w    (a:hash_alg) = m:Buffer.buffer (word a){length m = Spec.size_ws_w a}
 let block_w (a:hash_alg) = m:Buffer.buffer (word a){length m = Spec.size_block_w}
+let block   (a:hash_alg) = m:Buffer.buffer (word a){length m = Spec.size_word a * Spec.size_block_w}
 
 ///////////////////////////////
 
@@ -143,6 +145,7 @@ let size_count_w = 1ul
 
 (* Sizes of objects in the state *)
 inline_for_extraction let size_state a = size_k_w a +^ size_ws_w a +^ size_whash_w +^ size_count_w
+let state (a:hash_alg) = m:Buffer.buffer (word a){length m = word_v a (size_state a)}
 
 (* Positions of objects in the state *)
 inline_for_extraction let pos_k_w = 0ul
@@ -178,70 +181,29 @@ let buffer_reveal : (a:hash_alg) -> GTot (Seq.seq (word a) -> GTot (Seq.seq (wor
   | SHA2_384 | SHA2_512 -> Hacl.Spec.Endianness.reveal_h64s
 
 
-(* Define a Ghost function to reveal the HaCl bytes as normal bytes *)
-let buffer_update : (a:hash_alg) -> GTot (Seq.seq (word a) -> GTot (Seq.seq (word a))) = function
-  | SHA2_224 | SHA2_256 -> hupd_64
-  | SHA2_384 | SHA2_512 -> hupd64_80
+(* Define a type and function to update SHA2 constants *)
+let constants_k_update_t (a:hash_alg) =
+  match a with
+  | SHA2_224 | SHA2_256 -> update_32bit_64_t
+  | SHA2_384 | SHA2_512 -> update_64bit_80_t
+
+let constants_k_update : (a:hash_alg) -> constants_k_update_t a = function
+  | SHA2_224 | SHA2_256 -> update_32bit_64
+  | SHA2_384 | SHA2_512 -> update_64bit_80
+
+(* Define a type and function to update SHA2 constants *)
+let constants_h_update_t (a:hash_alg) =
+  match a with
+  | SHA2_224 | SHA2_256 -> update_32bit_8_t
+  | SHA2_384 | SHA2_512 -> update_64bit_8_t
+
+let constants_h_update : (a:hash_alg) -> constants_h_update_t a = function
+  | SHA2_224 | SHA2_256 -> update_32bit_8
+  | SHA2_384 | SHA2_512 -> update_64bit_8
 
 
-
-
-[@"substitute"]
-private val constants_set_k:
-  a:hash_alg ->
-  k:k_w a ->
-  Stack unit
-        (requires (fun h -> live h k))
-        (ensures (fun h0 _ h1 -> live h1 k /\ modifies_1 k h0 h1
-                 /\ ((buffer_reveal a (as_seq h1 k)) == Spec.k0 a)))
-
-[@"substitute"]
-let constants_set_k k = hupd64_80 k
-  (u64_to_h64 0x428a2f98d728ae22uL) (u64_to_h64 0x7137449123ef65cduL)
-  (u64_to_h64 0xb5c0fbcfec4d3b2fuL) (u64_to_h64 0xe9b5dba58189dbbcuL)
-  (u64_to_h64 0x3956c25bf348b538uL) (u64_to_h64 0x59f111f1b605d019uL)
-  (u64_to_h64 0x923f82a4af194f9buL) (u64_to_h64 0xab1c5ed5da6d8118uL)
-  (u64_to_h64 0xd807aa98a3030242uL) (u64_to_h64 0x12835b0145706fbeuL)
-  (u64_to_h64 0x243185be4ee4b28cuL) (u64_to_h64 0x550c7dc3d5ffb4e2uL)
-  (u64_to_h64 0x72be5d74f27b896fuL) (u64_to_h64 0x80deb1fe3b1696b1uL)
-  (u64_to_h64 0x9bdc06a725c71235uL) (u64_to_h64 0xc19bf174cf692694uL)
-  (u64_to_h64 0xe49b69c19ef14ad2uL) (u64_to_h64 0xefbe4786384f25e3uL)
-  (u64_to_h64 0x0fc19dc68b8cd5b5uL) (u64_to_h64 0x240ca1cc77ac9c65uL)
-  (u64_to_h64 0x2de92c6f592b0275uL) (u64_to_h64 0x4a7484aa6ea6e483uL)
-  (u64_to_h64 0x5cb0a9dcbd41fbd4uL) (u64_to_h64 0x76f988da831153b5uL)
-  (u64_to_h64 0x983e5152ee66dfabuL) (u64_to_h64 0xa831c66d2db43210uL)
-  (u64_to_h64 0xb00327c898fb213fuL) (u64_to_h64 0xbf597fc7beef0ee4uL)
-  (u64_to_h64 0xc6e00bf33da88fc2uL) (u64_to_h64 0xd5a79147930aa725uL)
-  (u64_to_h64 0x06ca6351e003826fuL) (u64_to_h64 0x142929670a0e6e70uL)
-  (u64_to_h64 0x27b70a8546d22ffcuL) (u64_to_h64 0x2e1b21385c26c926uL)
-  (u64_to_h64 0x4d2c6dfc5ac42aeduL) (u64_to_h64 0x53380d139d95b3dfuL)
-  (u64_to_h64 0x650a73548baf63deuL) (u64_to_h64 0x766a0abb3c77b2a8uL)
-  (u64_to_h64 0x81c2c92e47edaee6uL) (u64_to_h64 0x92722c851482353buL)
-  (u64_to_h64 0xa2bfe8a14cf10364uL) (u64_to_h64 0xa81a664bbc423001uL)
-  (u64_to_h64 0xc24b8b70d0f89791uL) (u64_to_h64 0xc76c51a30654be30uL)
-  (u64_to_h64 0xd192e819d6ef5218uL) (u64_to_h64 0xd69906245565a910uL)
-  (u64_to_h64 0xf40e35855771202auL) (u64_to_h64 0x106aa07032bbd1b8uL)
-  (u64_to_h64 0x19a4c116b8d2d0c8uL) (u64_to_h64 0x1e376c085141ab53uL)
-  (u64_to_h64 0x2748774cdf8eeb99uL) (u64_to_h64 0x34b0bcb5e19b48a8uL)
-  (u64_to_h64 0x391c0cb3c5c95a63uL) (u64_to_h64 0x4ed8aa4ae3418acbuL)
-  (u64_to_h64 0x5b9cca4f7763e373uL) (u64_to_h64 0x682e6ff3d6b2b8a3uL)
-  (u64_to_h64 0x748f82ee5defb2fcuL) (u64_to_h64 0x78a5636f43172f60uL)
-  (u64_to_h64 0x84c87814a1f0ab72uL) (u64_to_h64 0x8cc702081a6439ecuL)
-  (u64_to_h64 0x90befffa23631e28uL) (u64_to_h64 0xa4506cebde82bde9uL)
-  (u64_to_h64 0xbef9a3f7b2c67915uL) (u64_to_h64 0xc67178f2e372532buL)
-  (u64_to_h64 0xca273eceea26619cuL) (u64_to_h64 0xd186b8c721c0c207uL)
-  (u64_to_h64 0xeada7dd6cde0eb1euL) (u64_to_h64 0xf57d4f7fee6ed178uL)
-  (u64_to_h64 0x06f067aa72176fbauL) (u64_to_h64 0x0a637dc5a2c898a6uL)
-  (u64_to_h64 0x113f9804bef90daeuL) (u64_to_h64 0x1b710b35131c471buL)
-  (u64_to_h64 0x28db77f523047d84uL) (u64_to_h64 0x32caab7b40c72493uL)
-  (u64_to_h64 0x3c9ebe0a15c9bebcuL) (u64_to_h64 0x431d67c49c100d4cuL)
-  (u64_to_h64 0x4cc5d4becb3e42b6uL) (u64_to_h64 0x597f299cfc657e2auL)
-  (u64_to_h64 0x5fcb6fab3ad6faecuL) (u64_to_h64 0x6c44198c4a475817uL)
-
-
-(* Definition of the SHA2 constants *)
-let k224_256 : m:Seq.seq UInt32.t {length m = size_k_w SHA2_256} =
-  Seq.Create.create_64
+let constants_k_init_224_256 k =
+  update_32bit_64 k
   0x428a2f98ul 0x71374491ul 0xb5c0fbcful 0xe9b5dba5ul
   0x3956c25bul 0x59f111f1ul 0x923f82a4ul 0xab1c5ed5ul
   0xd807aa98ul 0x12835b01ul 0x243185beul 0x550c7dc3ul
@@ -259,18 +221,8 @@ let k224_256 : m:Seq.seq UInt32.t {length m = size_k_w SHA2_256} =
   0x748f82eeul 0x78a5636ful 0x84c87814ul 0x8cc70208ul
   0x90befffaul 0xa4506cebul 0xbef9a3f7ul 0xc67178f2ul
 
-let h224 : m:Seq.seq UInt32.t {length m = size_hash_w} =
-  Seq.Create.create_8
-  0xc1059ed8ul 0x367cd507ul 0x3070dd17ul 0xf70e5939ul
-  0xffc00b31ul 0x68581511ul 0x64f98fa7ul 0xbefa4fa4ul
-
-let h256 : m:Seq.seq UInt32.t {length m = size_hash_w} =
-  Seq.Create.create_8
-  0x6a09e667ul 0xbb67ae85ul 0x3c6ef372ul 0xa54ff53aul
-  0x510e527ful 0x9b05688cul 0x1f83d9abul 0x5be0cd19ul
-
-let k384_512 : m:Seq.seq UInt64.t {length m = size_k_w SHA2_512} =
-  Seq.Create.create_80
+let constants_k_init_384_512 k =
+  update_64bit_80 k
   0x428a2f98d728ae22uL 0x7137449123ef65cduL 0xb5c0fbcfec4d3b2fuL 0xe9b5dba58189dbbcuL
   0x3956c25bf348b538uL 0x59f111f1b605d019uL 0x923f82a4af194f9buL 0xab1c5ed5da6d8118uL
   0xd807aa98a3030242uL 0x12835b0145706fbeuL 0x243185be4ee4b28cuL 0x550c7dc3d5ffb4e2uL
@@ -292,412 +244,408 @@ let k384_512 : m:Seq.seq UInt64.t {length m = size_k_w SHA2_512} =
   0x28db77f523047d84uL 0x32caab7b40c72493uL 0x3c9ebe0a15c9bebcuL 0x431d67c49c100d4cuL
   0x4cc5d4becb3e42b6uL 0x597f299cfc657e2auL 0x5fcb6fab3ad6faecuL 0x6c44198c4a475817uL
 
-let h384 : m:Seq.seq UInt64.t {length m = size_hash_w} =
-  Seq.Create.create_8
+
+let constants_h_init_224 k =
+  update_32bit_8 k
+  0xc1059ed8ul 0x367cd507ul 0x3070dd17ul 0xf70e5939ul
+  0xffc00b31ul 0x68581511ul 0x64f98fa7ul 0xbefa4fa4ul
+
+let constants_h_init_256 k =
+  update_32bit_8 k
+  0x6a09e667ul 0xbb67ae85ul 0x3c6ef372ul 0xa54ff53aul
+  0x510e527ful 0x9b05688cul 0x1f83d9abul 0x5be0cd19ul
+
+let constants_h_init_384 k =
+  update_64bit_8 k
   0xcbbb9d5dc1059ed8uL 0x629a292a367cd507uL 0x9159015a3070dd17uL 0x152fecd8f70e5939uL
   0x67332667ffc00b31uL 0x8eb44a8768581511uL 0xdb0c2e0d64f98fa7uL 0x47b5481dbefa4fa4uL
 
-let h512 : m:Seq.seq UInt64.t {length m = size_hash_w} =
-  Seq.Create.create_8
+let constants_h_init_512 k =
+  update_64bit_8 k
   0x6a09e667f3bcc908uL 0xbb67ae8584caa73buL 0x3c6ef372fe94f82buL 0xa54ff53a5f1d36f1uL
   0x510e527fade682d1uL 0x9b05688c2b3e6c1fuL 0x1f83d9abfb41bd6buL 0x5be0cd19137e2179uL
 
 
-#reset-options " --z3refresh --max_fuel 0 --z3rlimit 10"
+let constants_k_init_t =
+  a:hash_alg ->
+  k:k_w a ->
+  Stack unit
+    (requires (fun h -> live h k))
+    (ensures (fun h0 _ h1 -> live h1 k /\ modifies_1 k h0 h1
+             /\ (buffer_reveal a (as_seq h1 k) == Spec.h0 a)))
+val constants_k_init : constants_k_init_t
+let constants_k_init : (a:hash_alg) -> constants_k_update_t a = function
+  | SHA2_224 | SHA2_256 -> constants_k_init_224_256
+  | SHA2_384 | SHA2_512 -> constants_k_init_384_512
 
-[@"substitute"]
-val constants_set_h_0:
-  hash:uint64_p{length hash = v size_hash_w} ->
+
+let constants_h_init_t =
+  a:hash_alg ->
+  hash:hash_w a ->
   Stack unit
     (requires (fun h -> live h hash))
     (ensures (fun h0 _ h1 -> live h1 hash /\ modifies_1 hash h0 h1
-             /\ (let seq_h_0 = Hacl.Spec.Endianness.reveal_h64s (as_seq h1 hash) in
-                seq_h_0 == Spec.h_0)))
+             /\ (buffer_reveal a (as_seq h1 hash) == Spec.h0 a)))
+val constants_h_init : constants_h_init_t
+let constants_h_init : (a:hash_alg) -> constants_h_update_t a = function
+  | SHA2_224 -> constants_h_init_224
+  | SHA2_256 -> constants_h_init_256
+  | SHA2_384 -> constants_h_init_384
+  | SHA2_512 -> constants_h_init_512
 
-[@"substitute"]
-let constants_set_h_0 hash = hupd64_8 hash
-  (u64_to_h64 0x6a09e667f3bcc908uL) (u64_to_h64 0xbb67ae8584caa73buL)
-  (u64_to_h64 0x3c6ef372fe94f82buL) (u64_to_h64 0xa54ff53a5f1d36f1uL)
-  (u64_to_h64 0x510e527fade682d1uL) (u64_to_h64 0x9b05688c2b3e6c1fuL)
-  (u64_to_h64 0x1f83d9abfb41bd6buL) (u64_to_h64 0x5be0cd19137e2179uL)
-
-
-#reset-options " --z3refresh --max_fuel 0 --z3rlimit 20"
 
 [@ "substitute"]
 private
 val ws_part_1_core:
-  ws_w    :uint64_p {length ws_w = v size_ws_w} ->
-  block_w :uint64_p {length block_w = v size_block_w /\ disjoint ws_w block_w} ->
+  a:hash_alg ->
+  ws_w:ws_w a ->
+  block_w:block_w a{disjoint ws_w block_w} ->
   i:UInt32.t{UInt32.v i < 16} ->
   Stack unit
         (requires (fun h -> live h ws_w /\ live h block_w
-                  /\ (let seq_ws = reveal_h64s (as_seq h ws_w) in
-                  let seq_block = reveal_h64s (as_seq h block_w) in
-                  (forall (j:nat). {:pattern (Seq.index seq_ws j)} j < UInt32.v i ==> Seq.index seq_ws j == Spec.ws seq_block j))))
+                  /\ (let seq_ws = buffer_reveal a (as_seq h ws_w) in
+                  let seq_block = buffer_reveal a (as_seq h block_w) in
+                  (forall (j:nat). {:pattern (Seq.index seq_ws j)} j < UInt32.v i ==> Seq.index seq_ws j == Spec.ws a seq_block j))))
         (ensures  (fun h0 r h1 -> live h1 ws_w /\ live h0 ws_w
                   /\ live h1 block_w /\ live h0 block_w /\ modifies_1 ws_w h0 h1 /\
                   as_seq h1 block_w == as_seq h0 block_w
-                  /\ (let w = reveal_h64s (as_seq h1 ws_w) in
-                  let b = reveal_h64s (as_seq h0 block_w) in
-                  (forall (j:nat). {:pattern (Seq.index w j)} j < UInt32.v i+1 ==> Seq.index w j == Spec.ws b j))))
-
-#reset-options " --z3refresh --max_fuel 0 --z3rlimit 100"
+                  /\ (let w = buffer_reveal a (as_seq h1 ws_w) in
+                  let b = buffer_reveal a (as_seq h0 block_w) in
+                  (forall (j:nat). {:pattern (Seq.index w j)} j < UInt32.v i+1 ==> Seq.index w j == Spec.ws a b j))))
 
 [@ "substitute"]
-let ws_part_1_core ws_w block_w t =
+let ws_part_1_core a ws_w block_w t =
   (**) let h0 = ST.get() in
   (**) let h = ST.get() in
   ws_w.(t) <- block_w.(t);
   (**) let h1 = ST.get() in
   (**) let h' = ST.get() in
   (**) no_upd_lemma_1 h0 h1 ws_w block_w;
-  (**) Lemmas.lemma_spec_ws_def (reveal_h64s (as_seq h block_w)) (UInt32.v t);
-  (**) assert(Seq.index (reveal_h64s (as_seq h1 ws_w)) (UInt32.v t) == Seq.index (reveal_h64s(as_seq h block_w)) (UInt32.v t))
+//  (**) Lemmas.lemma_spec_ws_def (buffer_reveal a (as_seq h block_w)) (UInt32.v t);
+  (**) assert(Seq.index (buffer_reveal a (as_seq h1 ws_w)) (UInt32.v t) == Seq.index (reveal_h64s(as_seq h block_w)) (UInt32.v t))
 
-
-#reset-options " --z3refresh --max_fuel 0 --z3rlimit 500"
 
 [@"substitute"]
 private val ws_part_1:
-  ws_w    :uint64_p {length ws_w = v size_ws_w} ->
-  block_w :uint64_p {length block_w = v size_block_w /\ disjoint ws_w block_w} ->
+  a:hash_alg ->
+  ws_w:ws_w a ->
+  block_w:block_w a{disjoint ws_w block_w} ->
   Stack unit
         (requires (fun h -> live h ws_w /\ live h block_w))
         (ensures  (fun h0 r h1 -> live h1 ws_w /\ live h0 ws_w
                   /\ live h1 block_w /\ live h0 block_w /\ modifies_1 ws_w h0 h1
-                  /\ (let w = reveal_h64s (as_seq h1 ws_w) in
-                  let b = reveal_h64s (as_seq h0 block_w) in
-                  (forall (i:nat). {:pattern (Seq.index w i)} i < 16 ==> Seq.index w i == Spec.ws b i))))
-
-#reset-options " --z3refresh --max_fuel 0 --z3rlimit 200"
+                  /\ (let w = buffer_reveal a (as_seq h1 ws_w) in
+                  let b = buffer_reveal a (as_seq h0 block_w) in
+                  (forall (i:nat). {:pattern (Seq.index w i)} i < 16 ==> Seq.index w i == Spec.ws a b i))))
 
 [@"substitute"]
-let ws_part_1 ws_w block_w =
+let ws_part_1 a ws_w block_w =
   (**) let h0 = ST.get() in
   let inv (h1: HS.mem) (i: nat) : Type0 =
     i <= 16 /\ live h1 ws_w /\ live h1 block_w /\ modifies_1 ws_w h0 h1 /\
     as_seq h1 block_w == as_seq h0 block_w
-    /\ (let seq_block = reveal_h64s (as_seq h0 block_w) in
-       let w = reveal_h64s (as_seq h1 ws_w) in
-    (forall (j:nat). {:pattern (Seq.index w j)} j < i ==> Seq.index w j == Spec.ws seq_block j))
+    /\ (let seq_block = buffer_reveal a (as_seq h0 block_w) in
+       let w = buffer_reveal a (as_seq h1 ws_w) in
+    (forall (j:nat). {:pattern (Seq.index w j)} j < i ==> Seq.index w j == Spec.ws a seq_block j))
   in
   let f' (t:uint32_t {v t < 16}) :
     Stack unit
       (requires (fun h -> inv h (UInt32.v t)))
       (ensures (fun h_1 _ h_2 -> inv h_2 (UInt32.v t + 1)))
     =
-    ws_part_1_core ws_w block_w t
+    ws_part_1_core a ws_w block_w t
   in
-  (**) Lemmas.lemma_modifies_0_is_modifies_1 h0 ws_w;
+  // (**) Lemmas.lemma_modifies_0_is_modifies_1 h0 ws_w;
   for 0ul 16ul inv f';
   (**) let h1 = ST.get() in ()
 
 
-#reset-options " --z3refresh --max_fuel 0 --z3rlimit 20"
-
 [@ "substitute"]
 private
 val ws_part_2_core:
-  ws_w    :uint64_p {length ws_w = v size_ws_w} ->
-  block_w :uint64_p {length block_w = v size_block_w /\ disjoint ws_w block_w} ->
-  i:UInt32.t{16 <= UInt32.v i /\ UInt32.v i < 80} ->
+  a:hash_alg ->
+  ws_w    :ws_w a ->
+  block_w :block_w a{disjoint ws_w block_w} ->
+  i:UInt32.t{16 <= UInt32.v i /\ UInt32.v i < Spec.size_k_w a} ->
   Stack unit
         (requires (fun h -> live h ws_w /\ live h block_w /\
-                  (let w = reveal_h64s (as_seq h ws_w) in
-                  let b = reveal_h64s (as_seq h block_w) in
-                  (forall (j:nat). {:pattern (Seq.index w j)} j < UInt32.v i ==> Seq.index w j == Spec.ws b j))))
+                  (let w = buffer_reveal a (as_seq h ws_w) in
+                  let b = buffer_reveal a (as_seq h block_w) in
+                  (forall (j:nat). {:pattern (Seq.index w j)} j < UInt32.v i ==> Seq.index w j == Spec.ws a b j))))
         (ensures  (fun h0 r h1 -> live h1 ws_w /\ live h0 ws_w
                   /\ live h1 block_w /\ live h0 block_w /\ modifies_1 ws_w h0 h1 /\
-                  reveal_h64s (as_seq h1 block_w) == reveal_h64s (as_seq h0 block_w)
-                  /\ (let w = reveal_h64s (as_seq h1 ws_w) in
-                  let b = reveal_h64s (as_seq h0 block_w) in
-                  (forall (j:nat). {:pattern (Seq.index w j)} j < UInt32.v i+1 ==> Seq.index w j == Spec.ws b j))))
-
-#reset-options " --z3refresh --max_fuel 0 --z3rlimit 100"
+                  buffer_reveal a (as_seq h1 block_w) == buffer_reveal a (as_seq h0 block_w)
+                  /\ (let w = buffer_reveal a (as_seq h1 ws_w) in
+                  let b = buffer_reveal a (as_seq h0 block_w) in
+                  (forall (j:nat). {:pattern (Seq.index w j)} j < UInt32.v i+1 ==> Seq.index w j == Spec.ws a b j))))
 
 [@ "substitute"]
-let ws_part_2_core ws_w block_w t =
+let ws_part_2_core a ws_w block_w t =
   (**) let h0 = ST.get () in
   let t16 = ws_w.(t -^ 16ul) in
   let t15 = ws_w.(t -^ 15ul) in
   let t7  = ws_w.(t -^ 7ul) in
   let t2  = ws_w.(t -^ 2ul) in
-  ws_w.(t) <- H64.((_sigma1 t2) +%^ (t7 +%^ ((_sigma0 t15) +%^ t16)));
+  ws_w.(t) <- (Spec.word_add_mod (_sigma1 a t2) (Spec.word_add_mod t7 (Spec.word_add_mod (_sigma0 a t15) t16)));
   (**) let h1 = ST.get () in
   (**) no_upd_lemma_1 h0 h1 ws_w block_w;
-  (**) Lemmas.lemma_spec_ws_def2 (reveal_h64s (as_seq h0 block_w)) (UInt32.v t);
-  (**) assert(Seq.index (reveal_h64s (as_seq h1 ws_w)) (UInt32.v t) == Spec.ws (reveal_h64s (as_seq h0 block_w)) (UInt32.v t))
+//  (**) Lemmas.lemma_spec_ws_def2 (reveal_h64s (as_seq h0 block_w)) (UInt32.v t);
+  (**) assert(Seq.index (reveal_h64s (as_seq h1 ws_w)) (UInt32.v t) == Spec.ws a (buffer_reveal a (as_seq h0 block_w)) (UInt32.v t))
 
-
-#reset-options " --z3refresh --max_fuel 0 --z3rlimit 20"
 
 [@"substitute"]
 private val ws_part_2:
-  ws_w    :uint64_p {length ws_w = v size_ws_w} ->
-  block_w :uint64_p {length block_w = v size_block_w /\ disjoint ws_w block_w} ->
+  a:hash_alg ->
+  ws_w :ws_w a ->
+  block_w :block_w a{disjoint ws_w block_w} ->
   Stack unit
         (requires (fun h -> live h ws_w /\ live h block_w
-                  /\ (let w = reveal_h64s (as_seq h ws_w) in
-                  let b = reveal_h64s (as_seq h block_w) in
-                  (forall (i:nat). {:pattern (Seq.index w i)} i < 16 ==> Seq.index w i == Spec.ws b i))))
+                  /\ (let w = buffer_reveal a (as_seq h ws_w) in
+                  let b = buffer_reveal a (as_seq h block_w) in
+                  (forall (i:nat). {:pattern (Seq.index w i)} i < 16 ==> Seq.index w i == Spec.ws a b i))))
         (ensures  (fun h0 r h1 -> live h1 ws_w /\ live h0 ws_w
                   /\ live h1 block_w /\ live h0 block_w /\ modifies_1 ws_w h0 h1
-                  /\ (let w = reveal_h64s (as_seq h1 ws_w) in
-                  let b = reveal_h64s (as_seq h0 block_w) in
-                  (forall (i:nat). {:pattern (Seq.index w i)} i < 80 ==> Seq.index w i == Spec.ws b i))))
-
-#reset-options " --z3refresh --max_fuel 0 --z3rlimit 200"
+                  /\ (let w = buffer_reveal a (as_seq h1 ws_w) in
+                  let b = buffer_reveal a (as_seq h0 block_w) in
+                  (forall (i:nat). {:pattern (Seq.index w i)} i < 80 ==> Seq.index w i == Spec.ws a b i))))
 
 [@"substitute"]
-let ws_part_2 ws_w block_w =
+let ws_part_2 a ws_w block_w =
   (**) let h0 = ST.get() in
   let inv (h1: HS.mem) (i: nat) : Type0 =
-    live h1 ws_w /\ live h1 block_w /\ modifies_1 ws_w h0 h1 /\ 16 <= i /\ i <= 80
-    /\ reveal_h64s (as_seq h1 block_w) == reveal_h64s (as_seq h0 block_w)
-    /\ (let seq_block = reveal_h64s (as_seq h0 block_w) in
-       let w = reveal_h64s (as_seq h1 ws_w) in
-    (forall (j:nat). {:pattern (Seq.index w j)} j < i ==> Seq.index w j == Spec.ws seq_block j))
+    live h1 ws_w /\ live h1 block_w /\ modifies_1 ws_w h0 h1 /\ 16 <= i /\ i <= Spec.size_k_w a
+    /\ buffer_reveal a (as_seq h1 block_w) == buffer_reveal a (as_seq h0 block_w)
+    /\ (let seq_block = buffer_reveal a (as_seq h0 block_w) in
+       let w = buffer_reveal a (as_seq h1 ws_w) in
+    (forall (j:nat). {:pattern (Seq.index w j)} j < i ==> Seq.index w j == Spec.ws a seq_block j))
   in
-  let f' (t:uint32_t {16 <= v t /\ v t < v size_ws_w}) :
+  let f' (t:uint32_t {16 <= v t /\ v t < v (size_ws_w a)}) :
     Stack unit
       (requires (fun h -> inv h (UInt32.v t)))
       (ensures (fun h_1 _ h_2 -> inv h_2 (UInt32.v t + 1)))
     =
-    ws_part_2_core ws_w block_w t
+    ws_part_2_core a ws_w block_w t
   in
-  (**) Lemmas.lemma_modifies_0_is_modifies_1 h0 ws_w;
-  for 16ul 80ul inv f';
+//  (**) Lemmas.lemma_modifies_0_is_modifies_1 h0 ws_w;
+  for 16ul (size_ws_w a) inv f';
   (**) let h1 = ST.get() in ()
 
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 20"
-
 [@"substitute"]
 private val ws:
-  ws_w    :uint64_p {length ws_w = v size_ws_w} ->
-  block_w :uint64_p {length block_w = v size_block_w /\ disjoint ws_w block_w} ->
+  a: hash_alg ->
+  ws_w:ws_w a ->
+  block_w :block_w a{disjoint ws_w block_w} ->
   Stack unit
         (requires (fun h -> live h ws_w /\ live h block_w))
         (ensures  (fun h0 r h1 -> live h1 ws_w /\ live h0 ws_w
                   /\ live h1 block_w /\ live h0 block_w /\ modifies_1 ws_w h0 h1
-                  /\ (let w = reveal_h64s (as_seq h1 ws_w) in
-                  let b = reveal_h64s (as_seq h0 block_w) in
-                  (forall (i:nat). {:pattern (Seq.index w i)} i < 80 ==> Seq.index w i == Spec.ws b i))))
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 50"
+                  /\ (let w = buffer_reveal a (as_seq h1 ws_w) in
+                  let b = buffer_reveal a (as_seq h0 block_w) in
+                  (forall (i:nat). {:pattern (Seq.index w i)} i < (Spec.size_ws_w a) ==> Seq.index w i == Spec.ws a b i))))
 
 [@"substitute"]
-let ws ws_w block_w =
-  ws_part_1 ws_w block_w;
-  ws_part_2 ws_w block_w
+let ws a ws_w block_w =
+  ws_part_1 a ws_w block_w;
+  ws_part_2 a ws_w block_w
 
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 20"
 
 [@"substitute"]
 private val shuffle_core:
-  hash_w :uint64_p {length hash_w = v size_hash_w} ->
-  block_w:uint64_p {length block_w = v size_block_w} ->
-  ws_w   :uint64_p {length ws_w = v size_ws_w} ->
-  k_w    :uint64_p {length k_w = v size_k_w} ->
-  t      :uint32_t {v t < v size_k_w} ->
+  a:hash_alg ->
+  hash_w :hash_w a ->
+  block_w:block_w a ->
+  ws_w   :ws_w a ->
+  k_w    :k_w a ->
+  t      :uint32_t {v t < v (size_k_w a)} ->
   Stack unit
         (requires (fun h -> live h hash_w /\ live h ws_w /\ live h k_w /\ live h block_w /\
-          reveal_h64s (as_seq h k_w) == Spec.k /\
-          (let w = reveal_h64s (as_seq h ws_w) in
-           let b = reveal_h64s (as_seq h block_w) in
-           (forall (i:nat). {:pattern (Seq.index w i)} i < 80 ==> Seq.index w i == Spec.ws b i)) ))
+          buffer_reveal a (as_seq h k_w) == Spec.k0 a /\
+          (let w = buffer_reveal a (as_seq h ws_w) in
+           let b = buffer_reveal a (as_seq h block_w) in
+           (forall (i:nat). {:pattern (Seq.index w i)} i < Spec.size_ws_w a ==> Seq.index w i == Spec.ws a b i)) ))
         (ensures  (fun h0 r h1 -> live h0 hash_w /\ live h0 ws_w /\ live h0 k_w /\ live h0 block_w
                   /\ live h1 hash_w /\ modifies_1 hash_w h0 h1
-                  /\ (let seq_hash_0 = reveal_h64s (as_seq h0 hash_w) in
-                  let seq_hash_1 = reveal_h64s (as_seq h1 hash_w) in
-                  let seq_block = reveal_h64s (as_seq h0 block_w) in
-                  seq_hash_1 == Spec.shuffle_core seq_block seq_hash_0 (U32.v t))))
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 100"
+                  /\ (let seq_hash_0 = buffer_reveal a (as_seq h0 hash_w) in
+                  let seq_hash_1 = buffer_reveal a (as_seq h1 hash_w) in
+                  let seq_block = buffer_reveal a (as_seq h0 block_w) in
+                  seq_hash_1 == Spec.shuffle_core a seq_block seq_hash_0 (U32.v t))))
 
 [@"substitute"]
-let shuffle_core hash block ws k t =
-  let a = hash.(0ul) in
-  let b = hash.(1ul) in
-  let c = hash.(2ul) in
-  let d = hash.(3ul) in
-  let e = hash.(4ul) in
-  let f = hash.(5ul) in
-  let g = hash.(6ul) in
-  let h = hash.(7ul) in
+let shuffle_core a hash_w block_w ws_w k_w t =
+  let a0 = hash_w.(0ul) in
+  let b0 = hash_w.(1ul) in
+  let c0 = hash_w.(2ul) in
+  let d0 = hash_w.(3ul) in
+  let e0 = hash_w.(4ul) in
+  let f0 = hash_w.(5ul) in
+  let g0 = hash_w.(6ul) in
+  let h0 = hash_w.(7ul) in
 
   (* Perform computations *)
-  let k_t = k.(t) in
-  let ws_t = ws.(t) in
-  let t1 = H64.(h +%^ (_Sigma1 e) +%^ (_Ch e f g) +%^ k_t +%^ ws_t) in
-  let t2 = H64.((_Sigma0 a) +%^ (_Maj a b c)) in
+  let k_t = k_w.(t) in
+  let ws_t = ws_w.(t) in
+  let t1 = Spec.word_add_mod h0 (Spec.word_add_mod (_Sigma1 a e0)
+                                (Spec.word_add_mod (_Ch a e0 f0 g0) (Spec.word_add_mod k_t ws_t))) in
+  let t2 = Spec.word_add_mod (_Sigma0 a a0) (_Maj a a0 b0 c0) in
 
-  (* Store the new working hash in the state *)
-  hupd64_8 hash H64.(t1 +%^ t2) a b c H64.(d +%^ t1) e f g
+  (* Store the new working hash_w in the state *)
+  () //constants_h_update a hash_w (Spec.word_add_mod t1 t2) a0 b0 c0 (Spec.word_add_mod d0 t1) e0 f0 g0
 
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 20"
 
 [@"substitute"]
 private val shuffle:
-  hash_w :uint64_p {length hash_w = v size_hash_w} ->
-  block_w:uint64_p {length block_w = v size_block_w /\ disjoint block_w hash_w} ->
-  ws_w   :uint64_p {length ws_w = v size_ws_w /\ disjoint ws_w hash_w} ->
-  k_w    :uint64_p {length k_w = v size_k_w /\ disjoint k_w hash_w} ->
+  a: hash_alg ->
+  hash_w :hash_w a ->
+  block_w:block_w a{disjoint block_w hash_w} ->
+  ws_w   :ws_w a{disjoint ws_w hash_w} ->
+  k_w    :k_w a{disjoint k_w hash_w} ->
   Stack unit
         (requires (fun h -> live h hash_w /\ live h ws_w /\ live h k_w /\ live h block_w /\
-          reveal_h64s (as_seq h k_w) == Spec.k /\
-          (let w = reveal_h64s (as_seq h ws_w) in
-           let b = reveal_h64s (as_seq h block_w) in
-           (forall (i:nat). {:pattern (Seq.index w i)} i < 80 ==> Seq.index w i == Spec.ws b i)) ))
+          buffer_reveal a (as_seq h k_w) == Spec.k0 a /\
+          (let w = buffer_reveal a (as_seq h ws_w) in
+           let b = buffer_reveal a (as_seq h block_w) in
+           (forall (i:nat). {:pattern (Seq.index w i)} i < (Spec.size_k_w a) ==> Seq.index w i == Spec.ws a b i)) ))
         (ensures  (fun h0 r h1 -> live h1 hash_w /\ modifies_1 hash_w h0 h1 /\ live h0 block_w
                   /\ live h0 hash_w
-                  /\ (let seq_hash_0 = reveal_h64s (as_seq h0 hash_w) in
-                  let seq_hash_1 = reveal_h64s (as_seq h1 hash_w) in
-                  let seq_block = reveal_h64s (as_seq h0 block_w) in
-                  seq_hash_1 == Spec.shuffle seq_hash_0 seq_block)))
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 100"
+                  /\ (let seq_hash_0 = buffer_reveal a (as_seq h0 hash_w) in
+                  let seq_hash_1 = buffer_reveal a (as_seq h1 hash_w) in
+                  let seq_block = buffer_reveal a (as_seq h0 block_w) in
+                  seq_hash_1 == Spec.shuffle a seq_hash_0 seq_block)))
 
 [@"substitute"]
-let shuffle hash block ws k =
+let shuffle a hash block ws k =
   (**) let h0 = ST.get() in
   let inv (h1: HS.mem) (i: nat) : Type0 =
-    live h1 hash /\ modifies_1 hash h0 h1 /\ i <= v size_ws_w
-    /\ (let seq_block = reveal_h64s (as_seq h0 block) in
-    reveal_h64s (as_seq h1 hash) == repeat_range_spec 0 i (Spec.shuffle_core seq_block) (reveal_h64s (as_seq h0 hash)))
+    live h1 hash /\ modifies_1 hash h0 h1 /\ i <= v (size_ws_w a)
+    /\ (let seq_block = buffer_reveal a (as_seq h0 block) in
+    buffer_reveal a (as_seq h1 hash) == repeat_range_spec 0 i (Spec.shuffle_core a seq_block) (buffer_reveal a (as_seq h0 hash)))
   in
-  let f' (t:uint32_t {v t < v size_ws_w}) :
+  let f' (t:uint32_t {v t < v (size_ws_w a)}) :
     Stack unit
       (requires (fun h -> inv h (UInt32.v t)))
       (ensures (fun h_1 _ h_2 -> inv h_2 (UInt32.v t + 1)))
     =
-    shuffle_core hash block ws k t;
-    (**) C.Loops.lemma_repeat_range_spec 0 (UInt32.v t + 1) (Spec.shuffle_core (reveal_h64s (as_seq h0 block))) (reveal_h64s (as_seq h0 hash))
+    shuffle_core a hash block ws k t;
+    (**) C.Loops.lemma_repeat_range_spec 0 (UInt32.v t + 1) (Spec.shuffle_core a (buffer_reveal a (as_seq h0 block))) (buffer_reveal a (as_seq h0 hash))
   in
-  (**) C.Loops.lemma_repeat_range_0 0 0 (Spec.shuffle_core (reveal_h64s (as_seq h0 block))) (reveal_h64s (as_seq h0 hash));
-  for 0ul size_ws_w inv f'
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 20"
+  (**) C.Loops.lemma_repeat_range_0 0 0 (Spec.shuffle_core a (buffer_reveal a (as_seq h0 block))) (buffer_reveal a (as_seq h0 hash));
+  for 0ul (size_ws_w a) inv f'
 
 [@"substitute"]
 private val sum_hash:
-  hash_0:uint64_p{length hash_0 = v size_hash_w} ->
-  hash_1:uint64_p{length hash_1 = v size_hash_w /\ disjoint hash_0 hash_1} ->
+  a:hash_alg ->
+  hash_0:hash_w a ->
+  hash_1:hash_w a{disjoint hash_0 hash_1} ->
   Stack unit
     (requires (fun h -> live h hash_0 /\ live h hash_1))
     (ensures  (fun h0 _ h1 -> live h0 hash_0 /\ live h1 hash_0 /\ live h0 hash_1 /\ modifies_1 hash_0 h0 h1
-              /\ (let new_seq_hash_0 = reveal_h64s (as_seq h1 hash_0) in
-              let seq_hash_0 = reveal_h64s (as_seq h0 hash_0) in
-              let seq_hash_1 = reveal_h64s (as_seq h0 hash_1) in
-              let res        = Spec.Loops.seq_map2 (fun x y -> FStar.UInt64.(x +%^ y)) seq_hash_0 seq_hash_1 in
+              /\ (let new_seq_hash_0 = buffer_reveal a (as_seq h1 hash_0) in
+              let seq_hash_0 = buffer_reveal a (as_seq h0 hash_0) in
+              let seq_hash_1 = buffer_reveal a (as_seq h0 hash_1) in
+              let res        = Spec.Loops.seq_map2 (fun x y -> Spec.word_add_mod a x y) seq_hash_0 seq_hash_1 in
               new_seq_hash_0 == res)))
 
 [@"substitute"]
-let sum_hash hash_0 hash_1 =
+let sum_hash a hash_0 hash_1 =
   (**) let h0 = ST.get() in
-  C.Loops.in_place_map2 hash_0 hash_1 size_hash_w (fun x y -> H64.(x +%^ y));
+  C.Loops.in_place_map2 hash_0 hash_1 size_hash_w (fun x y -> Spec.word_add_mod a x y);
   (**) let h1 = ST.get() in
-  (**) Seq.lemma_eq_intro (Spec.Loops.seq_map2 (fun x y -> FStar.UInt64.(x +%^ y)) (reveal_h64s (as_seq h0 hash_0))
-                          (reveal_h64s (as_seq  h0 hash_1))) (reveal_h64s (as_seq h1 hash_0))
+
+  // NIK : Should the following (commented) even typecheck ?
+  // It does while I think it should not for SHA2_224 nor SHA2_256 which are UInt32 based
+  // (**) Seq.lemma_eq_intro (Spec.Loops.seq_map2 (fun x y -> FStar.UInt64.(x +%^ y)) (buffer_reveal a (as_seq h0 hash_0))
+  //                         (buffer_reveal a (as_seq  h0 hash_1))) (buffer_reveal a (as_seq h1 hash_0))
+  (**) Seq.lemma_eq_intro (Spec.Loops.seq_map2 (fun x y -> Spec.word_add_mod a x y) (buffer_reveal a (as_seq h0 hash_0))
+                          (buffer_reveal a (as_seq  h0 hash_1))) (buffer_reveal a (as_seq h1 hash_0))
 
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 20"
 
 [@"c_inline"]
 val alloc:
-  unit ->
-  StackInline (state:uint64_p{length state = v size_state})
+  a:hash_alg ->
+  StackInline (state:state a)
     (requires (fun h0 -> True))
     (ensures (fun h0 st h1 -> ~(contains h0 st) /\ live h1 st /\ modifies_0 h0 h1 /\ frameOf st == h1.tip
              /\ Map.domain h1.h == Map.domain h0.h))
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 20"
-
 [@"c_inline"]
-let alloc () = Buffer.create (u32_to_h64 0ul) size_state
+let alloc a = Buffer.create (u32_to_h64 0ul) (size_state a)
 
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 50"
 
 val init:
-  state:uint64_p{length state = v size_state} ->
+  a:hash_alg ->
+  state:state a ->
   Stack unit
     (requires (fun h0 -> live h0 state
-              /\ (let seq_counter = Seq.slice (as_seq h0 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)) in
+              /\ (let seq_counter = Seq.slice (as_seq h0 state) (word_v a pos_count_w) ((word_v a pos_count_w + word_v a size_count_w)) in
               let counter = Seq.index seq_counter 0 in
               H64.v counter = 0)))
     (ensures  (fun h0 r h1 -> live h1 state /\ modifies_1 state h0 h1
-              /\ (let slice_k = Seq.slice (as_seq h1 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
-              let slice_h_0 = Seq.slice (as_seq h1 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)) in
-              let seq_counter = Seq.slice (as_seq h1 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)) in
+              /\ (let slice_k = Seq.slice (as_seq h1 state) (U32.v pos_k_w) (U32.(v pos_k_w + v (size_k_w a))) in
+              let slice_h_0 = Seq.slice (as_seq h1 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)) in
+              let seq_counter = Seq.slice (as_seq h1 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)) in
               let counter = Seq.index seq_counter 0 in
-              let seq_k = Hacl.Spec.Endianness.reveal_h64s slice_k in
-              let seq_h_0 = Hacl.Spec.Endianness.reveal_h64s slice_h_0 in
-              seq_k == Spec.k /\ seq_h_0 == Spec.h_0 /\ H64.v counter = 0)))
+              let seq_k = buffer_reveal a slice_k in
+              let seq_h_0 = buffer_reveal a slice_h_0 in
+              seq_k == Spec.k0 a /\ seq_h_0 == Spec.h0 a /\ word_v a counter = 0)))
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 50"
-
-let init state =
+let init a state =
   (**) let h0 = ST.get () in
-  let n = Buffer.sub state pos_count_w size_count_w in
-  let k = Buffer.sub state pos_k_w size_k_w in
-  let h_0 = Buffer.sub state pos_whash_w size_whash_w in
-  constants_set_k k;
-  constants_set_h_0 h_0;
-  (**) let h1 = ST.get () in
-  (**) no_upd_lemma_2 h0 h1 k h_0 n
+  let n = Buffer.sub state (pos_count_w a) size_count_w in
+  let k = Buffer.sub state pos_k_w (size_k_w a) in
+  let h0 = Buffer.sub state (pos_whash_w a) size_whash_w in
+  constants_k_init a k;
+  constants_h_init a h0; ()
+  // (**) let h1 = ST.get () in
+  // (**) no_upd_lemma_2 h0 h1 k h0 n
 
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 50"
 
 [@"substitute"]
 private val copy_hash:
-  hash_w_1 :uint64_p {length hash_w_1 = v size_hash_w} ->
-  hash_w_2 :uint64_p {length hash_w_2 = v size_hash_w /\ disjoint hash_w_1 hash_w_2} ->
+  a:hash_alg ->
+  hash_w_1 :hash_w a ->
+  hash_w_2 :hash_w a{disjoint hash_w_1 hash_w_2} ->
   Stack unit
         (requires (fun h0 -> live h0 hash_w_1 /\ live h0 hash_w_2))
         (ensures  (fun h0 _ h1 -> live h0 hash_w_1 /\ live h0 hash_w_2 /\ live h1 hash_w_1 /\ modifies_1 hash_w_1 h0 h1
                   /\ (as_seq h1 hash_w_1 == as_seq h0 hash_w_2)))
 
 [@"substitute"]
-let copy_hash hash_w_1 hash_w_2 =
+let copy_hash a hash_w_1 hash_w_2 =
   (**) let h0 = ST.get () in
-  Buffer.blit hash_w_2 0ul hash_w_1 0ul size_hash_w;
-  (**) let h1 = ST.get () in
-  (**) assert(Seq.slice (as_seq h1 hash_w_1) 0 (v size_hash_w) == Seq.slice (as_seq h0 hash_w_2) 0 (v size_hash_w));
-  (**) Lemmas.lemma_blit_slices_eq h0 h1 hash_w_1 hash_w_2 (v size_hash_w)
+  Buffer.blit hash_w_2 0ul hash_w_1 0ul size_hash_w; ()
+  // (**) let h1 = ST.get () in
+  // (**) assert(Seq.slice (as_seq h1 hash_w_1) 0 (v size_hash_w) == Seq.slice (as_seq h0 hash_w_2) 0 (v size_hash_w));
+  // (**) Lemmas.lemma_blit_slices_eq h0 h1 hash_w_1 hash_w_2 (v size_hash_w)
 
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 20"
 
 [@"substitute"]
 private val update_core:
-  hash_w :uint64_p {length hash_w = v size_hash_w} ->
-  data   :uint8_p  {length data = v size_block /\ disjoint data hash_w} ->
-  data_w :uint64_p {length data_w = v size_block_w /\ disjoint data_w hash_w} ->
-  ws_w   :uint64_p {length ws_w = v size_ws_w /\ disjoint ws_w hash_w} ->
-  k_w    :uint64_p {length k_w = v size_k_w /\ disjoint k_w hash_w} ->
+  a: hash_alg ->
+  hash_w :hash_w a ->
+  data   :block a {disjoint data hash_w} ->
+  data_w :block_w a{disjoint data_w hash_w} ->
+  ws_w   :ws_w a{disjoint ws_w hash_w} ->
+  k_w    :k_w a{disjoint k_w hash_w} ->
   Stack unit
         (requires (fun h0 -> live h0 hash_w /\ live h0 data /\ live h0 data_w /\ live h0 ws_w /\ live h0 k_w
-                  /\ reveal_h64s (as_seq h0 k_w) == Spec.k
-                  /\ (reveal_h64s (as_seq h0 data_w) = Spec.Lib.uint64s_from_be (v size_block_w) (reveal_sbytes (as_seq h0 data)))
-                  /\ (let w = reveal_h64s (as_seq h0 ws_w) in
-                  let b = reveal_h64s (as_seq h0 data_w) in
-                  (forall (i:nat). {:pattern (Seq.index w i)} i < 80 ==> Seq.index w i == Spec.ws b i))))
+                  /\ buffer_reveal a (as_seq h0 k_w) == Spec.k0 a
+                  /\ (buffer_reveal a (as_seq h0 data_w) = Spec.words_from_be a (v size_block_w) (reveal_sbytes (as_seq h0 data)))
+                  /\ (let w = buffer_reveal a (as_seq h0 ws_w) in
+                  let b = buffer_reveal a (as_seq h0 data_w) in
+                  (forall (i:nat). {:pattern (Seq.index w i)} i < (Spec.size_ws_w a) ==> Seq.index w i == Spec.ws a b i))))
         (ensures  (fun h0 r h1 -> live h0 hash_w /\ live h0 data /\ live h0 data_w /\ live h1 hash_w /\ modifies_1 hash_w h0 h1
-                  /\ (let seq_hash_0 = reveal_h64s (as_seq h0 hash_w) in
-                  let seq_hash_1 = reveal_h64s (as_seq h1 hash_w) in
+                  /\ (let seq_hash_0 = buffer_reveal a (as_seq h0 hash_w) in
+                  let seq_hash_1 = buffer_reveal a (as_seq h1 hash_w) in
                   let seq_block = reveal_sbytes (as_seq h0 data) in
-                  let res = Spec.update seq_hash_0 seq_block in
+                  let res = Spec.update a seq_hash_0 seq_block in
                   seq_hash_1 == res)))
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 400"
 
 [@"substitute"]
-let update_core hash_w data data_w ws_w k_w =
+let update_core a hash_w data data_w ws_w k_w =
   (**) assert_norm(pow2 32 = 0x100000000);
   (**) assert_norm(pow2 64 = 0x10000000000000000);
   (**) assert_norm(pow2 125 = 42535295865117307932921825928971026432);
@@ -706,8 +654,8 @@ let update_core hash_w data data_w ws_w k_w =
   (* Push a new frame *)
   (**) push_frame();
   (**) let h1 = ST.get() in
-  (**) assert(let b = Spec.words_from_be Spec.size_block_w (reveal_sbytes (as_seq h0 data)) in
-              reveal_h64s (as_seq h0 data_w) == b);
+  (**) assert(let b = Spec.words_from_be a Spec.size_block_w (reveal_sbytes (as_seq h0 data)) in
+              buffer_reveal a (as_seq h0 data_w) == b);
 
   (* Allocate space for converting the data block *)
   let hash_0 = Buffer.create (u64_to_h64 0uL) size_hash_w in
@@ -719,7 +667,7 @@ let update_core hash_w data data_w ws_w k_w =
   (**) no_upd_lemma_0 h1 h2 hash_w;
 
   (* Keep track of the the current working hash from the state *)
-  copy_hash hash_0 hash_w;
+  copy_hash a hash_0 hash_w;
   (**) let h3 = ST.get() in
   (**) no_upd_lemma_1 h2 h3 hash_0 data;
   (**) no_upd_lemma_1 h2 h3 hash_0 data_w;
@@ -730,10 +678,10 @@ let update_core hash_w data data_w ws_w k_w =
   (* Step 2 : Initialize the eight working variables *)
   (* Step 3 : Perform logical operations on the working variables *)
   (* Step 4 : Compute the ith intermediate hash value *)
-  shuffle hash_0 data_w ws_w k_w;
+  shuffle a hash_0 data_w ws_w k_w;
   (**) let h4 = ST.get() in
-  (**) assert(let b = Spec.words_from_be Spec.size_block_w (reveal_sbytes (as_seq h0 data)) in
-              let ha = Spec.shuffle (reveal_h64s (as_seq h0 hash_w)) b in
+  (**) assert(let b = Spec.words_from_be a Spec.size_block_w (reveal_sbytes (as_seq h0 data)) in
+              let ha = Spec.shuffle a (buffer_reveal a (as_seq h0 hash_w)) b in
               as_seq h4 hash_w == as_seq h0 hash_w /\
               reveal_h64s (as_seq h4 hash_0) == ha);
   (**) no_upd_lemma_1 h3 h4 hash_0 data;
@@ -743,14 +691,14 @@ let update_core hash_w data data_w ws_w k_w =
   (**) no_upd_lemma_1 h3 h4 hash_0 hash_w;
 
   (* Use the previous one to update it inplace *)
-  sum_hash hash_w hash_0;
+  sum_hash a hash_w hash_0;
   (**) let h5 = ST.get() in
   (**) assert(let x = reveal_h64s (as_seq h4 hash_w) in
           let y = reveal_h64s (as_seq h4 hash_0) in
           x == reveal_h64s (as_seq h0 hash_w) /\
-          y == Spec.shuffle (reveal_h64s (as_seq h0 hash_w)) (Spec.words_from_be Spec.size_block_w (reveal_sbytes (as_seq h0 data))));
+          y == Spec.shuffle a (reveal_h64s (as_seq h0 hash_w)) (Spec.words_from_be a Spec.size_block_w (reveal_sbytes (as_seq h0 data))));
   (**) assert(let x = reveal_h64s (as_seq h0 hash_w) in
-         let y = Spec.shuffle (reveal_h64s (as_seq h0 hash_w)) (Spec.words_from_be Spec.size_block_w (reveal_sbytes (as_seq h0 data))) in
+         let y = Spec.shuffle a (reveal_h64s (as_seq h0 hash_w)) (Spec.words_from_be a Spec.size_block_w (reveal_sbytes (as_seq h0 data))) in
          let z = reveal_h64s (as_seq h5 hash_w) in
          let z' = Spec.Loops.seq_map2 (fun x y -> FStar.UInt64.(x +%^ y)) x y in
          z == z');
@@ -763,27 +711,24 @@ let update_core hash_w data data_w ws_w k_w =
   (**) pop_frame()
 
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 20"
-
 [@"substitute"]
 val counter_increment:
-  counter_w :uint64_p{length counter_w = v size_count_w} ->
+  a: hash_alg ->
+  counter_w :word a ->
   Stack unit
         (requires (fun h -> live h counter_w
                   /\ (let counter = Seq.index (as_seq h counter_w) 0 in
-                  H64.v counter < (pow2 64 - 1))))
+                  (word_v a counter) < ((Spec.pow2_values a) - 1))))
         (ensures  (fun h0 _ h1 -> live h1 counter_w /\ live h0 counter_w /\ modifies_1 counter_w h0 h1
                   /\ (let counter_0 = Seq.index (as_seq h0 counter_w) 0 in
                   let counter_1 = Seq.index (as_seq h1 counter_w) 0 in
-                  H64.v counter_1 = H64.v counter_0 + 1 /\ H64.v counter_1 < pow2 64)))
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 50"
+                  word_v a counter_1 = word_v a counter_0 + 1 /\ word_v counter_1 < Spec.pow2_values a)))
 
 [@"substitute"]
-let counter_increment counter_w =
+let counter_increment a counter_w =
   let c0 = counter_w.(0ul) in
   let one = u32_to_h64 1ul in
-  counter_w.(0ul) <- H64.(c0 +%^ one)
+  counter_w.(0ul) <- (Spec.word_add_mod c0 one)
 
 
 #reset-options "--z3refresh --max_fuel 0  --z3rlimit 75"
@@ -796,7 +741,7 @@ val update:
                   /\ (let seq_k = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
                   let seq_counter = Seq.slice (as_seq h0 state) (U32.v pos_count_w) (U32.(v pos_count_w + v size_count_w)) in
                   let counter = Seq.index seq_counter 0 in
-                  reveal_h64s seq_k == Spec.k /\ H64.v counter < (pow2 64 - 1))))
+                  reveal_h64s seq_k == Spec.k0 a /\ H64.v counter < (Spec.pow2_values a - 1))))
         (ensures  (fun h0 r h1 -> live h0 state /\ live h0 data /\ live h1 state /\ modifies_1 state h0 h1
                   /\ (let seq_hash_0 = Seq.slice (as_seq h0 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)) in
                   let seq_hash_1 = Seq.slice (as_seq h1 state) (U32.v pos_whash_w) (U32.(v pos_whash_w + v size_whash_w)) in
