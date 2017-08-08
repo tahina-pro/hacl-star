@@ -7,7 +7,7 @@ OCAMLOPT := $(OCAMLOPT) -w -8-20-26-28-10
 OCAML_INCLUDES=-I ../code/lib/ml ../code/lib/ml/hacllib.cmxa
 
 all: lib
-	$(MAKE)	poly1305.exe chacha20.exe salsa20.exe chacha20poly1305.exe gf128.exe ed25519.exe curve25519.exe sha2_256.exe sha2_512.exe
+	$(MAKE)	poly1305.exe chacha20.exe salsa20.exe chacha20poly1305.exe gf128.exe ed25519.exe curve25519.exe sha2_256.exe sha2_384.exe sha2_512.exe
 
 lib:
 	$(MAKE) -C ../code/lib/ml
