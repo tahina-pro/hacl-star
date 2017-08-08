@@ -19,7 +19,15 @@ OCAML_OPTIONS=-fsopt "--lax" -fsopt "--codegen OCaml" -fsopt "--no_location_info
 
 ALL=Hacl.UInt8.fst Hacl.UInt16.fst Hacl.UInt32.fst Hacl.UInt64.fst Hacl.UInt128.fst Hacl.Cast.fst
 
-all: $(addsuffix -verify, $(ALL))
+
+all: verify
+
+lax: $(addsuffix -lax, $(ALL))
+verify: $(addsuffix -verify, $(ALL))
+hints: $(addsuffix .hints, $(ALL))
+all-lax: lax
+all-ver: verify
+all-hints: hints
 
 ML=$(addprefix ml/, $(ALL:.fst=.ml))
 OBJS=$(FILES:.ml=.o)

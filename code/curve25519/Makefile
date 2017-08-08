@@ -56,13 +56,18 @@ ct: $(addsuffix -lax, $(X25519_FILES))
 	# Using the --verify_all argument to lift abstractions, typechecks all dependencies of Curve25519.fst
 	$(FSTAR) --lax --verify_all Curve25519.fst
 
+lax: $(addsuffix -lax, $(X25519_FILES))
+	# Using the --verify_all argument to lift abstractions, typechecks all dependencies of Curve25519.fst
+	$(FSTAR) --lax --verify_all Curve25519.fst
+
 bignum-ver: $(addsuffix -reloc-verify, $(BIGNUM))
 specific-ver: $(addsuffix -verify, $(X25519_SPECIFIC))
 verify: bignum-ver specific-ver
 all-ver: verify
+all-lax: lax
 all-ct: ct
 
-# Hints regeneration                                                          
+# Hints regeneration
 bignum-hints: $(addsuffix .reloc.hints, $(BIGNUM))
 specific-hints: $(addsuffix .hints, $(X25519_SPECIFIC))
 hints: bignum-hints specific-hints
@@ -137,4 +142,4 @@ count-line:
 	cloc --force-lang=ocaml $(X25519_ONLY)
 
 clean:
-	rm -rf *.exe *.exe.* *.out *~ x25519-c 
+	rm -rf *.exe *.exe.* *.out *~ x25519-c

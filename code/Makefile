@@ -24,6 +24,7 @@ TOOSLOW=experimental
 %-clean: %
 	$(MAKE) -C $< clean
 
+lax: $(addsuffix -lax, $(DIRECTORIES))
 verify: $(addsuffix -ver, $(filter-out $(TOOSLOW),$(DIRECTORIES)))
 test: $(addsuffix -test, $(DIRECTORIES))
 ct: $(addsuffix -ct, $(DIRECTORIES))
@@ -31,6 +32,7 @@ extract-c: $(addsuffix -c, $(filter-out bignum, $(DIRECTORIES)))
 hints: $(addsuffix -hints, $(DIRECTORIES))
 ci: $(addsuffix -ci, $(filter-out $(TOOSLOW),$(DIRECTORIES)))
 
+all-lax: lax
 all-verify: verify
 all-hints: hints
 all-ci: ci

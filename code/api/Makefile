@@ -16,9 +16,11 @@ FSTAR_INCLUDES+=$(addprefix --include ,$(INCLUDE_DIRS))
 	@echo $(OPTIONS) --hint_info \
 	$(FSTAR_INCLUDES)
 
-ct: $(addsuffix -lax, $(API_FILES))
+lax: $(addsuffix -lax, $(API_FILES))
+ct: $(addsuffix -ct, $(API_FILES))
 verify: $(addsuffix -verify, $(API_FILES))
 hints: $(addsuffix .hints, $(API_FILES))
+all-lax: lax
 all-ver: verify
 all-ct: ct
 all-hints: hints
