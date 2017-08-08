@@ -67,7 +67,7 @@ FSTAR_LIB=$(FSTAR_HOME)/ulib
 HINTS_ENABLED?=--use_hints
 FSTAR_INCLUDES+=--include $(HACL_KREMLIN) --include $(KREMLIB) --include $(HACL_HOME)/specs
 
-FSTAR=$(FSTAR_HOME)/bin/fstar.exe $(HINTS_ENABLED) $(OTHERFLAGS) $(FSTAR_INCLUDES)
+FSTAR=$(FSTAR_HOME)/bin/fstar.exe $(HINTS_ENABLED) $(FSTAR_INCLUDES)
 
 ifdef CLOUD_VERIFY
 BATCH_JOB_ID=$(subst job-id:,,$(filter job-id:%, $(shell cat $(BATCH_ID_FILE))))
