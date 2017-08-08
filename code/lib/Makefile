@@ -23,9 +23,11 @@ ALL=Hacl.UInt8.fst Hacl.UInt16.fst Hacl.UInt32.fst Hacl.UInt64.fst Hacl.UInt128.
 all: verify
 
 lax: $(addsuffix -lax, $(ALL))
+ct: lax # identity
 verify: $(addsuffix -verify, $(ALL))
 hints: $(addsuffix .hints, $(ALL))
 all-lax: lax
+all-ct: ct
 all-ver: verify
 all-hints: hints
 

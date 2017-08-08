@@ -27,13 +27,16 @@ export KREMLIN_HOME
 # $(info $(FSTAR_HOME))
 # $(info $(KREMLIN_HOME))
 
-HACL_LIB=$(HACL_HOME)/code/lib
+HACL_LIB_CT=$(HACL_HOME)/code/lib
+HACL_LIB_VER=$(HACL_HOME)/code/lib/kremlin
+
 HACL_FILES=Hacl.UInt8.fst Hacl.UInt16.fst Hacl.UInt32.fst Hacl.UInt64.fst Hacl.UInt128.fst Hacl.Cast.fst Hacl.Types.fst Hacl.Policies.fst
-HACL_LIB_FILES=$(addprefix $(HACL_LIB)/, $(HACL_FILES))
-HACL_KREMLIN=$(HACL_LIB)/kremlin
-HACL_KREMLIN_FILES=$(addprefix $(HACL_KREMLIN)/, $(HACL_FILES))
+HACL_LIB_CT_FILES=$(addprefix $(HACL_LIB_CT)/, $(HACL_FILES))
+HACL_LIB_VER_FILES=$(addprefix $(HACL_LIB_VER)/, $(HACL_FILES))
 HACL_API=$(HACL_HOME)/code/api
 HACL_CRYPTO_UTILS=$(HACL_HOME)/code/lib
+HACL_CT_INCLUDES=--include $(HACL_LIB_CT)
+HACL_VER_INCLUDES=--include $(HACL_LIB_VER)
 
 ifeq ($(CI),true)
 VERBOSE=
@@ -65,9 +68,10 @@ KREMLIN_TESTLIB=-add-include '"testlib.h"' $(KREMLIB)/testlib.c
 
 FSTAR_LIB=$(FSTAR_HOME)/ulib
 HINTS_ENABLED?=--use_hints
-FSTAR_INCLUDES+=--include $(HACL_KREMLIN) --include $(KREMLIB) --include $(HACL_HOME)/specs
 
+FSTAR_INCLUDES+=--include $(KREMLIB) --include $(HACL_HOME)/specs
 FSTAR=$(FSTAR_HOME)/bin/fstar.exe $(HINTS_ENABLED) $(FSTAR_INCLUDES)
+
 
 ifdef CLOUD_VERIFY
 BATCH_JOB_ID=$(subst job-id:,,$(filter job-id:%, $(shell cat $(BATCH_ID_FILE))))
@@ -91,15 +95,20 @@ ml-lib:
 	$(MAKE) -C $(ULIB_ML)
 
 import-lib:
-	@cp $(HACL_LIB_FILES) .
+	@cp $(HACL_LIB_CT_FILES) .
 
 import-kremlin:
-	@cp $(HACL_KREMLIN_FILES)) .
+	@cp $(HACL_LIB_VER_FILES)) .
 
 %.fst-lax: %.fst
-	$(FSTAR) --lax $^
+	$(FSTAR) --lax $(HACL_VER_INCLUDES) $^
 %.fsti-lax: %.fsti
-	$(FSTAR) --lax $^
+	$(FSTAR) --lax $(HACL_VER_INCLUDES) $^
+
+%.fst-ct: %.fst
+	$(FSTAR) --lax $(HACL_CT_INCLUDES) $^
+%.fsti-ct: %.fsti
+	$(FSTAR) --lax $(HACL_CT_INCLUDES) $^
 
 %.fst-krml: %.fst
 	$(KREMLIN) $(KREMLIN_ARGS) $(KREMLIN_INCLUDES) $<
