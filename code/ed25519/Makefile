@@ -150,6 +150,7 @@ ct: $(addsuffix -lax, $(ED25519_FILES))
 lax: $(addsuffix -lax, $(ED25519_FILES))
 	$(FSTAR) --lax --verify_all Hacl.Impl.Ed25519.SecretToPublic.fst Hacl.Impl.Ed25519.Sign.fst
 
+all-lax: lax
 all-ct: ct
 
 bignum-ver: $(addsuffix -reloc-verify, $(BIGNUM))

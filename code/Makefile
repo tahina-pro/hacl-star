@@ -9,6 +9,9 @@ TOOSLOW=experimental
 %-test: %
 	$(MAKE) -C $< test
 
+%-lax: %
+	$(MAKE) -C $< all-lax
+
 %-ver: %
 	$(MAKE) -C $< all-ver
 

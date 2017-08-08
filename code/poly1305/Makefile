@@ -49,6 +49,8 @@ bignum-ver: $(addsuffix -reloc-verify, $(BIGNUM))
 specific-ver: $(addsuffix -verify, $(POLY1305_SPECIFIC))
 verify: bignum-ver specific-ver
 all-ver: verify
+
+all-lax: lax
 all-ct: ct
 
 # Hints regeneration

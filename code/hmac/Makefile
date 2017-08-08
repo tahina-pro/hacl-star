@@ -11,6 +11,7 @@ ct: $(addsuffix -ct, $(HMAC_SHA2_FILES))
 hints: $(addsuffix .hints, $(HMAC_SHA2_FILES))
 verify: $(addsuffix -verify, $(HMAC_SHA2_FILES))
 all-ct: ct
+all-lax: lax
 all-ver: verify
 all-ci: verify
 all-hints: hints

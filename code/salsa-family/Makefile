@@ -31,6 +31,7 @@ verify: $(addsuffix -verify, $(SALSA_FAMILY_FILES))
 hints: $(addsuffix .hints, $(filter-out $(BROKEN), $(SALSA_FAMILY_FILES)))
 all-ci: ci
 all-ct: ct
+all-lax: lax
 all-hints: hints
 all-ver: verify
 

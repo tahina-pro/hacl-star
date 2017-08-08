@@ -16,6 +16,7 @@ lax: $(addsuffix -lax, $(SHA2_FILES))
 verify: $(addsuffix -verify, $(SHA2_FILES))
 ct: $(addsuffix -ct, $(SHA2_FILES))
 hints: $(addsuffix .hints, $(SHA2_FILES))
+all-lax: lax
 all-ct: ct
 all-ver: verify
 all-ci: verify
