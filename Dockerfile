@@ -4,12 +4,12 @@ MAINTAINER Benjamin Beurdouche <benjamin.beurdouche@inria.fr>
 # Based on the original F* formula with Daniel Fabian
 
 # Define versions of dependencies
-ENV opamv 4.04.2
+ENV opamv 4.04.3
 ENV z3v z3-4.5.0
 
 # Install required packages and set versions
 RUN apt-get -qq update
-RUN apt-get install --yes sudo libssl-dev libsqlite3-dev g++-5 gcc-5 m4 make opam pkg-config python libgmp3-dev cmake
+RUN apt-get install --yes sudo libssl-dev libsqlite3-dev g++-5 gcc-5 m4 make opam pkg-config python libgmp3-dev
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 200
 RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 200
 
@@ -60,11 +60,5 @@ ENV FSTAR_HOME /home/Work/FStar
 ENV KREMLIN_HOME /home/Work/kremlin
 ENV HACL_HOME /home/Work/hacl-star
 
-# Run extraction for Curve25519
-RUN opam config exec -- make -C code/curve25519 extract-c
-
 # Produce artifacts for NSS
-WORKDIR /home/Work
-RUN mkdir artifacts
-RUN cp hacl-star/snapshots/nss/kremlib.h artifacts
-RUN cp hacl-star/code/curve25519/x25519-c/* artifacts
+RUN opam config exec -- make nss
