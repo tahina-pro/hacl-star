@@ -44,6 +44,7 @@ code/hash/sha2-512-c/
 code/hmac/hmac-c/
 code/api/aead-c/
 code/api/box-c/
+code/api/policies-c/
 code/curve25519/x25519-c/
 code/ed25519/ed25519-c/
 code/poly1305/poly-c/
