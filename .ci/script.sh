@@ -16,9 +16,4 @@ echo "\"$CLANG\": -traverse" >> _tags
 echo "\"FStar\": -traverse" >> _tags
 echo "\"kremlin\": -traverse" >> _tags
 
-echo -e "\e[31m=== Some info about the environment ===\e[0m"
-ocamlfind ocamlopt -config
-gcc --version
-fstar.exe --version
-
-make -C test travis
+echo -e "\e[31m=== No Travis build necessary for NSS ===\e[0m"
