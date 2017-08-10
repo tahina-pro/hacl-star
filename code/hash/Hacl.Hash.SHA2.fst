@@ -69,13 +69,82 @@ inline_for_extraction let  h64_to_h128 = Cast.sint64_to_sint128
 // SHA2
 //
 
-(* Definition of a word depending on the algorithm *)
 let word = Spec.word
+let word_long: a:hash_alg -> Tot Type0 = function
+  | SHA2_224 | SHA2_256 -> UInt64.t
+  | SHA2_384 | SHA2_512 -> UInt128.t
 
 let word_v: a:hash_alg -> Tot (word a -> Tot nat) = function
   | SHA2_224 | SHA2_256 -> UInt32.v
   | SHA2_384 | SHA2_512 -> UInt64.v
 
+let word_long_v: a:hash_alg -> Tot (word a -> Tot nat) = function
+  | SHA2_224 | SHA2_256 -> UInt64.v
+  | SHA2_384 | SHA2_512 -> UInt128.v
+
+let word_zero: a:hash_alg -> Tot (word a) = function
+  | SHA2_224 | SHA2_256 -> 0ul
+  | SHA2_384 | SHA2_512 -> 0uL
+
+let word_one: a:hash_alg -> Tot (word a) = function
+  | SHA2_224 | SHA2_256 -> 1ul
+  | SHA2_384 | SHA2_512 -> 1uL
+
+let word_add_mod: a:hash_alg -> Tot (word a -> word a -> Tot (word a)) = function
+  | SHA2_224 | SHA2_256 -> UInt32.add_mod
+  | SHA2_384 | SHA2_512 -> UInt64.add_mod
+
+let word_sub_mod: a:hash_alg -> Tot (word a -> word a -> Tot (word a)) = function
+  | SHA2_224 | SHA2_256 -> UInt32.sub_mod
+  | SHA2_384 | SHA2_512 -> UInt64.sub_mod
+
+let word_div: a:hash_alg -> Tot (word a -> word a -> Tot (word a)) = function
+  | SHA2_224 | SHA2_256 -> UInt32.div
+  | SHA2_384 | SHA2_512 -> UInt64.div
+
+let word_rem: a:hash_alg -> Tot (word a -> word a -> Tot (word a)) = function
+  | SHA2_224 | SHA2_256 -> UInt32.rem
+  | SHA2_384 | SHA2_512 -> UInt64.rem
+
+let word_lt: a:hash_alg -> Tot (word a -> word a -> Tot (word a)) = function
+  | SHA2_224 | SHA2_256 -> UInt32.lt
+  | SHA2_384 | SHA2_512 -> UInt64.lt
+
+let word_shift_left: a:hash_alg -> Tot (word a -> word a -> Tot (word a)) = function
+  | SHA2_224 | SHA2_256 -> UInt32.shift_left
+  | SHA2_384 | SHA2_512 -> UInt64.shift_left
+
+let word_long_mul: a:hash_alg -> Tot (word a -> word a -> Tot (word a)) = function
+  | SHA2_224 | SHA2_256 -> UInt64.mul_mod
+  | SHA2_384 | SHA2_512 -> UInt128.mul_wide
+
+let word_length: a:hash_alg -> Tot UInt32.t = function
+  | SHA2_224 | SHA2_256 -> 4ul
+  | SHA2_384 | SHA2_512 -> 8ul
+
+let word_long_length: a:hash_alg -> Tot UInt32.t = function
+  | SHA2_224 | SHA2_256 -> 8ul
+  | SHA2_384 | SHA2_512 -> 16ul
+
+let word_long_store_be_t (a:hash_alg) = match a with
+  | SHA2_224 | SHA2_256 -> Hacl.Endianness.hstore64_be_t
+  | SHA2_384 | SHA2_512 -> Hacl.Endianness.hstore128_be_t
+
+let word_long_store_be: a:hash_alg -> word_long_store_be_t a = function
+  | SHA2_224 | SHA2_256 -> Hacl.Endianness.hstore64_be
+  | SHA2_384 | SHA2_512 -> Hacl.Endianness.hstore128_be
+
+let word_is_zero: a:hash_alg -> x:word a -> y:word a -> Tot bool = function
+  | SHA2_224 | SHA2_256 -> UInt32.eq
+  | SHA2_224 | SHA2_256 -> UInt64.eq
+
+let cast_word_to_word_long: a:hash_alg -> Tot (word a -> Tot (word_long a)) = function
+  | SHA2_224 | SHA2_256 -> u32_to_h64
+  | SHA2_384 | SHA2_512 -> u64_to_h128
+
+let cast_word_to_uint32_t: a:hash_alg -> Tot (word a -> Tot UInt32.t) = function
+  | SHA2_224 | SHA2_256 -> (fun x -> x)
+  | SHA2_384 | SHA2_512 -> u64_to_u32
 
 (* List the Hash algorithms *)
 type hash_alg = Spec.SHA2.hash_alg
@@ -108,6 +177,12 @@ let size_block a : c:UInt32.t{v c = Spec.size_block a} = size_word a *^ size_blo
 
 (* Define the length of the constants *)
 inline_for_extraction
+let size_block_partial_max: a:hash_alg -> Tot (word a) = function
+  | SHA2_224 | SHA2_256 -> 55ul
+  | SHA2_384 | SHA2_512 -> 112uL
+
+(* Define the length of the constants *)
+inline_for_extraction
 let size_k_w: a:hash_alg -> Tot (z:UInt32.t{v z = Spec.size_k_w a}) = function
   | SHA2_224 | SHA2_256 -> 64ul
   | SHA2_384 | SHA2_512 -> 80ul
@@ -125,6 +200,7 @@ let size_len_ul_8 = Spec.size_len_ul_8
 
 (* Definition of structures in memory *)
 let hash_w  (a:hash_alg) = m:Buffer.buffer (word a){length m = Spec.size_hash_w}
+let hash_b  (a:hash_alg) = m:Buffer.buffer (word a){length m = Spec.size_word a * Spec.size_hash a}
 let k_w     (a:hash_alg) = m:Buffer.buffer (word a){length m = Spec.size_k_w a}
 let ws_w    (a:hash_alg) = m:Buffer.buffer (word a){length m = Spec.size_ws_w a}
 let block_w (a:hash_alg) = m:Buffer.buffer (word a){length m = Spec.size_block_w}
@@ -656,7 +732,7 @@ let update_core a hash_w data data_w ws_w k_w =
               buffer_reveal a (as_seq h0 data_w) == b);
 
   (* Allocate space for converting the data block *)
-  let hash_0 = Buffer.create (u64_to_h64 0uL) size_hash_w in
+  let hash_0 = Buffer.create (u64_to_h64 (word_zero a)) size_hash_w in
   (**) let h2 = ST.get() in
   (**) no_upd_lemma_0 h1 h2 data;
   (**) no_upd_lemma_0 h1 h2 data_w;
@@ -725,7 +801,7 @@ val counter_increment:
 [@"substitute"]
 let counter_increment a counter_w =
   let c0 = counter_w.(0ul) in
-  let one = u32_to_h64 1ul in
+  let one = word_one a in
   counter_w.(0ul) <- (Spec.word_add_mod c0 one)
 
 
@@ -855,7 +931,7 @@ val update_multi:
   a : hash_alg ->
   state :state a->
   data  :block a{disjoint state data} ->
-  n     :counter_w a{word_v a n * v (size_block a) = length data} ->
+  n     :UInt32.t{v n * v (size_block a) = length data} ->
   Stack unit
         (requires (fun h0 -> live h0 state /\ live h0 data
                   /\ (let seq_k = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v (size_k_w a))) in
@@ -876,15 +952,9 @@ val update_multi:
                   /\ word_v a counter_1 = word_v a counter_0 + (word_v a n) /\ word_v a counter_1 < Spec.max_pow2 a
                   /\ buffer_reveal a seq_hash_1 == Spec.update_multi a (buffer_reveal a seq_hash_0) (reveal_sbytes seq_blocks))))
 
-
-let is_equal_zero a:hash_alg -> Tot (word a -> word a -> Tot bool) = function
-  | SHA2_224 | SHA2_256 -> UInt32.eq
-  | SHA2_224 | SHA2_256 -> UInt64.eq
-
-
 let rec update_multi a state data n =
   (**) let h0 = ST.get() in
-  if is_equal_zero n then ()
+  if word_is_zero a (word_zero a) n then ()
 //    (**) assert (v n = 0);
 //    (**) Lemmas.lemma_aux_1 (v n) (v size_block);
 //    (**) assert (length data = 0);
@@ -906,34 +976,32 @@ let rec update_multi a state data n =
     (**) assert(disjoint b data);
 
     (* Call the update function on the current block *)
-    update state a b;
+    update a state b;
 
     (* Recursive call *)
-    update_multi a state data (n -^ 1ul) end
+    update_multi a state data (word_sub_mod a n (word_one a)) end
 
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 50"
 
 inline_for_extraction
-val pad0_length: (len:uint32_t{v len + 1 + v size_len_8 <= 2 * v size_block}) ->
-  Tot (n:uint32_t{v n = Spec.pad0_length (v len)})
-let pad0_length len =
-  (size_block +^ size_block -^ (len +^ size_len_8 +^ 1ul)) %^ size_block
+val pad0_length: a:hash_alg -> (len:uint32_t{v len + 1 + v (size_len_8 a) <= 2 * v (size_block a)}) ->
+  Tot (n:uint32_t{v n = Spec.pad0_length a (v len)})
+let pad0_length a len =
+  ((size_block a) +^ size_block a -^ (len +^ (size_len_8 a) +^ 1ul)) %^ size_block a
 
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 50"
 
 inline_for_extraction
-let encode_length (count:uint64_ht) (len:uint64_t{H64.v count * v size_block + U64.v len < Spec.max_input_len_8}) : Tot (l:uint128_ht{H128.v l = (H64.v count * v size_block + U64.v len) * 8}) =
-  let l0 = H128.mul_wide count (u32_to_h64 size_block) in
-  let l1 = u64_to_h128 len in
-  (**) assert(H128.v l0 + H128.v l1 < pow2 125);
-  (**) assert_norm(pow2 3 = 8);
-  (**) Math.Lemmas.modulo_lemma Hacl.UInt128.(v (shift_left (l0 +^ l1) 3ul)) (pow2 128);
-  H128.(H128.shift_left (l0 +^ l1) 3ul) // Multiplication by 2^3
+val encode_length:
+  a:hash_alg -> count:counter_w a -> len:(word a){word_v a count * v (size_block a) + word_v a len < (Spec.max_input8 a)} ->
+  Tot (l:word_long a{word_long_v a l = (word_v a count * word_v a (size_block a) + word_v a len) * 8})
 
+let encode_length a count len =
+  let l0 = word_long_mul a count (cast_word_to_word_long a (size_block a)) in
+  let l1 = cast_word_to_word_long a len in
+  // (**) assert(H128.v l0 + H128.v l1 < pow2 125);
+  // (**) assert_norm(pow2 3 = 8);
+  // (**) Math.Lemmas.modulo_lemma Hacl.UInt128.(v (shift_left (l0 +^ l1) 3ul)) (pow2 128);
+  word_shift_left a (word_add_mod a l0 l1) 3ul // Multiplication by 2^3
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 20"
 
 [@"substitute"]
 val set_pad_part1:
@@ -944,8 +1012,6 @@ val set_pad_part1:
                              /\ (let seq_buf1 = reveal_sbytes (as_seq h1 buf1) in
                              seq_buf1 = Seq.create 1 0x80uy)))
 
-#reset-options "--z3refresh --max_fuel 0 --z3rlimit 100"
-
 [@"substitute"]
 let set_pad_part1 buf1 =
   Buffer.upd buf1 0ul (u8_to_h8 0x80uy);
@@ -953,316 +1019,299 @@ let set_pad_part1 buf1 =
   (**) Seq.lemma_eq_intro (reveal_sbytes (as_seq h buf1)) (Seq.create 1 0x80uy)
 
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 20"
-
 [@"substitute"]
 val set_pad_part2:
-  buf2       :uint8_p{length buf2 = v size_len_8} ->
-  encodedlen :uint128_ht ->
+  a: hash_alg ->
+  buf2 :uint8_p{length buf2 = (word_v a (size_len_8 a))} ->
+  encodedlen :(word_long a) ->
   Stack unit
         (requires (fun h0 -> live h0 buf2))
         (ensures  (fun h0 _ h1 -> live h0 buf2 /\ live h1 buf2 /\ modifies_1 buf2 h0 h1
                   /\ (let seq_buf2 = reveal_sbytes (as_seq h1 buf2) in
-                  seq_buf2 == Endianness.big_bytes size_len_8 (H128.v encodedlen))))
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 30"
+                  seq_buf2 == Endianness.big_bytes (size_len_8 a) (word_v a encodedlen))))
 
 [@"substitute"]
-let set_pad_part2 buf2 encodedlen =
-  Hacl.Endianness.hstore128_be buf2 encodedlen;
-  (**) let h = ST.get () in
-  (**) Lemmas.lemma_eq_endianness h buf2 encodedlen
+let set_pad_part2 a buf2 encodedlen =
+//  word_long_store_be a buf2 encodedlen;
+  (**) let h = ST.get () in ()
+  //(**) Lemmas.lemma_eq_endianness h buf2 encodedlen
 
 
-#reset-options "--z3refresh --max_fuel 0 --z3rlimit 50"
-
-val lemma_downcast: (len:uint64_t) -> Lemma
-  (requires (UInt64.v len + 1 + UInt32.v size_len_8 <= 2 * UInt32.v size_block))
-  (ensures ((UInt64.v len + 1 + UInt32.v size_len_8 <= 2 * UInt32.v size_block) ==> (UInt32.v (Int.Cast.uint64_to_uint32 len) + 1 + UInt32.v size_len_8 <= 2 * UInt32.v size_block) ))
-let lemma_downcast len =
-  (**) assert(UInt64.v len + 1 + UInt32.v size_len_8 <= 2 * UInt32.v size_block);
-  (**) assert(UInt32.v (Int.Cast.uint64_to_uint32 len) + 1 + UInt32.v size_len_8 <= 2 * UInt32.v size_block)
+// val lemma_downcast: (len:uint64_t) -> Lemma
+//   (requires (UInt64.v len + 1 + UInt32.v size_len_8 <= 2 * UInt32.v size_block))
+//   (ensures ((UInt64.v len + 1 + UInt32.v size_len_8 <= 2 * UInt32.v size_block) ==> (UInt32.v (Int.Cast.uint64_to_uint32 len) + 1 + UInt32.v size_len_8 <= 2 * UInt32.v size_block) ))
+// let lemma_downcast len =
+//   (**) assert(UInt64.v len + 1 + UInt32.v size_len_8 <= 2 * UInt32.v size_block);
+//   (**) assert(UInt32.v (Int.Cast.uint64_to_uint32 len) + 1 + UInt32.v size_len_8 <= 2 * UInt32.v size_block)
 
 
-#reset-options "--z3refresh --max_fuel 0 --z3rlimit 50"
+// #reset-options "--z3refresh --max_fuel 0 --z3rlimit 50"
 
-val lemma_padding_bounds:
-  padding :uint8_p ->
-  len     :uint32_t {U32.v len + 1 + v size_len_8 <= 2 * v size_block
-                     /\ length padding = (1 + v size_len_8 + Spec.pad0_length (U32.v len))}
-  -> Lemma
-  (ensures (let p0 = pad0_length len in
-    1 <= length padding
-    /\ 1 + UInt32.v p0 <= length padding
-    /\ 1 + UInt32.v p0 + UInt32.v size_len_8 <= length padding))
-let lemma_padding_bounds padding len = ()
-
-
-#reset-options "--z3refresh --max_fuel 0 --z3rlimit 100"
-
-val lemma_eq_pad0_downcast: len:UInt64.t -> Lemma (ensures (Spec.pad0_length (UInt32.v (u64_to_u32 len)) = Spec.pad0_length (U64.v len)))
-let lemma_eq_pad0_downcast len = ()
+// val lemma_padding_bounds:
+//   padding :uint8_p ->
+//   len     :uint32_t {U32.v len + 1 + v size_len_8 <= 2 * v size_block
+//                      /\ length padding = (1 + v size_len_8 + Spec.pad0_length (U32.v len))}
+//   -> Lemma
+//   (ensures (let p0 = pad0_length len in
+//     1 <= length padding
+//     /\ 1 + UInt32.v p0 <= length padding
+//     /\ 1 + UInt32.v p0 + UInt32.v size_len_8 <= length padding))
+// let lemma_padding_bounds padding len = ()
 
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 50"
+// #reset-options "--z3refresh --max_fuel 0 --z3rlimit 100"
+
+// val lemma_eq_pad0_downcast: len:UInt64.t -> Lemma (ensures (Spec.pad0_length (UInt32.v (u64_to_u32 len)) = Spec.pad0_length (U64.v len)))
+// let lemma_eq_pad0_downcast len = ()
+
 
 [@"substitute"]
 val pad:
+  a: hash_alg ->
   padding :uint8_p ->
-  n       :uint64_ht ->
-  len     :uint64_t {U64.v len + 1 + v size_len_8 <= 2 * v size_block
-                     /\ H64.v n * v size_block + U64.v len < Spec.max_input_len_8
-                     /\ length padding = (1 + v size_len_8 + Spec.pad0_length (U64.v len))
-                     /\ (length padding + U64.v len) % v size_block = 0} ->
+  n       :word a ->
+  len     :word a {word_v a len + 1 + v (size_len_8 a) <= 2 * v (size_block a)
+                     /\ word_v a n * v (size_block a) + word_v a len < (Spec.max_input8 a)
+                     /\ length padding = (1 + v (size_len_8 a) + Spec.pad0_length a (word_v a len))
+                     /\ (length padding + word_v a len) % v (size_block a) = 0} ->
   Stack unit
         (requires (fun h0 -> live h0 padding
                   /\ (let seq_padding = reveal_sbytes (as_seq h0 padding) in
-                  seq_padding == Seq.create (1 + v size_len_8 + Spec.pad0_length (U64.v len)) 0uy)))
+                  seq_padding == Seq.create (1 + v (size_len_8 a) + Spec.pad0_length a (word_v a len)) 0uy)))
         (ensures  (fun h0 _ h1 -> live h0 padding /\ live h1 padding /\ modifies_1 padding h0 h1
                   /\ (let seq_padding = reveal_sbytes (as_seq h1 padding) in
-                  seq_padding == Spec.pad (H64.v n * v size_block) (U64.v len))))
-
-#reset-options "--z3refresh --max_fuel 0 --z3rlimit 500"
+                  seq_padding == Spec.pad a (word_v a n * v (size_block a)) (word_v a len))))
 
 [@"substitute"]
-let pad padding n len =
+let pad a padding n len =
 
   (* Compute and encode the total length *)
-  let encodedlen = encode_length n len in
-  assert(H128.v encodedlen = ((H64.v n * v size_block + U64.v len) * 8));
+  let encodedlen = encode_length a n len in
+  // assert(H128.v encodedlen = ((H64.v n * v size_block + U64.v len) * 8));
 
-  (* Get the memory *)
-  (**) let h0 = ST.get () in
+  // (* Get the memory *)
+  // (**) let h0 = ST.get () in
 
-  (* Compute the length of zeros *)
-  (**) assert(U64.v len + 1 + v size_len_8 <= 2 * v size_block);
-  (**) lemma_downcast len;
-  (**) assert(U32.v (u64_to_u32 len) + 1 + v size_len_8 <= 2 * v size_block);
-  let pad0len = pad0_length (u64_to_u32 len) in
-  (**) assert(UInt32.v pad0len = Spec.pad0_length (UInt32.v (u64_to_u32 len)));
-  (**) lemma_eq_pad0_downcast len;
-  (**) assert(UInt32.v pad0len = Spec.pad0_length (UInt64.v len));
+  // (* Compute the length of zeros *)
+  // (**) assert(U64.v len + 1 + v size_len_8 <= 2 * v size_block);
+  // (**) lemma_downcast len;
+  // (**) assert(U32.v (u64_to_u32 len) + 1 + v size_len_8 <= 2 * v size_block);
+  let pad0len = pad0_length a (u64_to_u32 len) in
+  // (**) assert(UInt32.v pad0len = Spec.pad0_length (UInt32.v (u64_to_u32 len)));
+  // (**) lemma_eq_pad0_downcast len;
+  // (**) assert(UInt32.v pad0len = Spec.pad0_length (UInt64.v len));
 
-  (* Retreive the different parts of the padding *)
-  (**) assert(length padding = (1 + v size_len_8 + Spec.pad0_length (U64.v len)));
-  (**) assert(1 <= length padding);
+  // (* Retreive the different parts of the padding *)
+  // (**) assert(length padding = (1 + v size_len_8 + Spec.pad0_length (U64.v len)));
+  // (**) assert(1 <= length padding);
   let buf1 = Buffer.sub padding 0ul 1ul in
-  (**) let h1 = ST.get () in
-  (**) assert(length padding = (1 + v size_len_8 + Spec.pad0_length (U64.v len)));
-  (**) lemma_eq_pad0_downcast len;
-  (**) assert(1 + UInt32.v pad0len <= length padding);
+  // (**) let h1 = ST.get () in
+  // (**) assert(length padding = (1 + v size_len_8 + Spec.pad0_length (U64.v len)));
+  // (**) lemma_eq_pad0_downcast len;
+  // (**) assert(1 + UInt32.v pad0len <= length padding);
   let zeros = Buffer.sub padding 1ul pad0len in
-  (**) let h2 = ST.get () in
-  (**) Seq.lemma_eq_intro (reveal_sbytes (as_seq h2 zeros)) (Seq.create (v pad0len) 0uy);
-  (**) assert(reveal_sbytes (as_seq h2 zeros) == Seq.create (v pad0len) 0uy);
-  (**) assert(v (1ul +^ pad0len) + v size_len_8 <= length padding);
-  let buf2 = Buffer.sub padding (1ul +^ pad0len) size_len_8 in
+  // (**) let h2 = ST.get () in
+  // (**) Seq.lemma_eq_intro (reveal_sbytes (as_seq h2 zeros)) (Seq.create (v pad0len) 0uy);
+  // (**) assert(reveal_sbytes (as_seq h2 zeros) == Seq.create (v pad0len) 0uy);
+  // (**) assert(v (1ul +^ pad0len) + v size_len_8 <= length padding);
+  let buf2 = Buffer.sub padding (word_add_mod a pad0len (word_one a)) (size_len_8 a) in
 
   (* Set the first byte of the padding *)
   set_pad_part1 buf1;
-  (**) no_upd_lemma_1 h0 h1 buf1 zeros;
-  (**) no_upd_lemma_1 h0 h1 buf1 buf2;
+  // (**) no_upd_lemma_1 h0 h1 buf1 zeros;
+  // (**) no_upd_lemma_1 h0 h1 buf1 buf2;
 
   (* Encode the total length at the end of the padding *)
-  set_pad_part2 buf2 encodedlen;
+  set_pad_part2 a buf2 encodedlen; ()
 
   (* Proof that this is the concatenation of the three parts *)
-  (**) let h3 = ST.get () in
-  (**) Buffer.no_upd_lemma_2 h2 h3 buf1 buf2 zeros;
-  (**) Seq.lemma_eq_intro (reveal_sbytes (as_seq h3 zeros)) (Seq.create (v pad0len) 0uy);
-  (**) assert(reveal_sbytes (as_seq h3 zeros) == Seq.create (v pad0len) 0uy);
-  (**) assert(reveal_sbytes (as_seq h3 buf1) == Seq.create 1 0x80uy);
-  (**) assert(reveal_sbytes (as_seq h3 buf2) == Endianness.big_bytes size_len_8 (H128.v encodedlen));
-  (**) Lemmas.lemma_sub_append_3 h3 padding 0ul buf1 1ul zeros (1ul +^ pad0len) buf2 (1ul +^ pad0len +^ size_len_8);
-  (**) Lemmas.lemma_pad_aux h3 n len buf1 zeros buf2
+  // (**) let h3 = ST.get () in
+  // (**) Buffer.no_upd_lemma_2 h2 h3 buf1 buf2 zeros;
+  // (**) Seq.lemma_eq_intro (reveal_sbytes (as_seq h3 zeros)) (Seq.create (v pad0len) 0uy);
+  // (**) assert(reveal_sbytes (as_seq h3 zeros) == Seq.create (v pad0len) 0uy);
+  // (**) assert(reveal_sbytes (as_seq h3 buf1) == Seq.create 1 0x80uy);
+  // (**) assert(reveal_sbytes (as_seq h3 buf2) == Endianness.big_bytes size_len_8 (H128.v encodedlen));
+  // (**) Lemmas.lemma_sub_append_3 h3 padding 0ul buf1 1ul zeros (1ul +^ pad0len) buf2 (1ul +^ pad0len +^ size_len_8);
+  // (**) Lemmas.lemma_pad_aux h3 n len buf1 zeros buf2
 
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 100"
 
 val update_last:
-  state :uint64_p {length state = v size_state} ->
-  data  :uint8_p  {disjoint state data} ->
-  len   :uint64_t {U64.v len = length data /\ (length data + v size_len_8 + 1) < 2 * v size_block} ->
+  a: hash_alg ->
+  state :state a ->
+  data  :uint8_p{disjoint state data} ->
+  len   :word a{word_v a len = length data /\ (length data + v (size_len_8 a) + 1) < 2 * v (size_block a)} ->
   Stack unit
         (requires (fun h0 -> live h0 state /\ live h0 data
-                  /\ (let seq_k = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
+                  /\ (let seq_k = Seq.slice (as_seq h0 state) (U32.v pos_k_w) (U32.(v pos_k_w + v (size_k_w a))) in
                   let seq_counter = Seq.slice (as_seq h0 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)) in
                   let counter = Seq.index seq_counter 0 in
-                  let nb = U64.div len (u32_to_u64 size_block) in
-                  reveal_h64s seq_k == Spec.k /\ H64.v counter < (pow2 64 - 2))))
+                  let nb = word_div a len (cast_word_to_word_long a (size_block a)) in
+                  buffer_reveal a seq_k == Spec.k0 a /\ word_v a counter < (Spec.max_pow2 a - 2))))
         (ensures  (fun h0 r h1 -> live h0 state /\ live h0 data /\ live h1 state /\ modifies_1 state h0 h1
                   /\ (let seq_hash_0 = Seq.slice (as_seq h0 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)) in
                   let seq_hash_1 = Seq.slice (as_seq h1 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)) in
                   let seq_data = reveal_sbytes (as_seq h0 data) in
                   let count = Seq.slice (as_seq h0 state) (U32.v (pos_count_w a)) (U32.v (pos_count_w a) + 1) in
-                  let prevlen = H64.((H64.v (Seq.index count 0)) * (U32.v size_block)) in
-                  reveal_h64s seq_hash_1 == Spec.update_last (reveal_h64s seq_hash_0) prevlen seq_data)))
+                  let prevlen = (word_v a (Seq.index count 0)) * (U32.v (size_block a)) in
+                  buffer_reveal a seq_hash_1 == Spec.update_last a (buffer_reveal a seq_hash_0) prevlen seq_data)))
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 750"
 
-let update_last state data len =
+let update_last a state data len =
   (**) assert_norm(pow2 32 = 0x100000000);
 
   (* Push a new memory frame *)
   (**) push_frame();
 
   (* Alocate memory set to zeros for the last two blocks of data *)
-  let blocks = Buffer.create (uint8_to_sint8 0uy) (size_block +^ size_block) in
+  let blocks = Buffer.create ((* uint8_to_sint8 *) 0uy) (word_add_mod a (size_block a) (size_block a)) in
 
   (**) let h0 = ST.get () in
   // (**) assert(reveal_sbytes (as_seq h0 blocks) == Seq.create (2 * v size_block) 0uy);
 
   (* Verification of how many blocks are necessary *)
   (* Threat model. The length is public ! *)
-  let nb = if U64.(len <^ 112uL) then 1ul else 2ul in
+  let nb = if (word_lt a len (size_block_partial_max a)) then 1ul else 2ul in
   let final_blocks =
     (**) let h1 = ST.get () in
-    if U64.(len <^ 112uL) then begin
-      (**) assert(v size_block <= length blocks);
-      (**) assert(live h1 blocks);
-      Buffer.offset blocks size_block end
+    if (word_lt a len (size_block_partial_max a)) then begin
+      // (**) assert(v size_block <= length blocks);
+      // (**) assert(live h1 blocks);
+      Buffer.offset blocks (size_block a) end
     else begin
       (**) assert(live h1 blocks);
       blocks end in
 
-  (**) let h2 = ST.get () in
-  (**) Seq.lemma_eq_intro (reveal_sbytes (as_seq h2 final_blocks))
-                          (if U64.(len <^ 112uL) then
-                              Seq.create (v size_block) 0uy
-                           else Seq.create (v size_block + v size_block) 0uy);
-  (**) Seq.lemma_eq_intro (reveal_sbytes (as_seq h2 final_blocks)) (Seq.create (
-                          v (if U64.(len <^ 112uL) then 1ul else 2ul)  * v size_block) 0uy);
-  (**) assert(reveal_sbytes (as_seq h2 final_blocks) == Seq.create (v nb * v size_block) 0uy);
+  // (**) let h2 = ST.get () in
+  // (**) Seq.lemma_eq_intro (reveal_sbytes (as_seq h2 final_blocks))
+  //                         (if (word_lt a len (size_block_partial_max a)) then
+  //                             Seq.create (v (size_block a)) 0uy
+  //                          else Seq.create (v (size_block a) + v (size_block a)) 0uy);
+  // (**) Seq.lemma_eq_intro (reveal_sbytes (as_seq h2 final_blocks)) (Seq.create (
+  //                         v (if (word_lt a len (size_block_partial_max a)) then 1ul else 2ul)  * v (size_block a)) 0uy);
+//  (**) assert(reveal_sbytes (as_seq h2 final_blocks) == Seq.create (v nb * v (size_block a)) 0uy);
 
   (* Copy the data to the final construct *)
   (* Leakage model : allowed because the length is public *)
 //  (**) assert(length final_blocks)
-  Buffer.blit data 0ul final_blocks 0ul (u64_to_u32 len);
-  (**) let h3 = ST.get () in
-  (**) Seq.lemma_eq_intro (as_seq h3 data) (Seq.slice (as_seq h3 data) 0 (U64.v len));
-  (**) Seq.lemma_eq_intro (as_seq h3 data) (Seq.slice (as_seq h3 final_blocks) 0 (U64.v len));
-  (**) assert(as_seq h3 data == Seq.slice (as_seq h3 final_blocks) 0 (U64.v len));
+  Buffer.blit data 0ul final_blocks 0ul (cast_word_to_uint32_t a len);
+  // (**) let h3 = ST.get () in
+  // (**) Seq.lemma_eq_intro (as_seq h3 data) (Seq.slice (as_seq h3 data) 0 (U64.v len));
+  // (**) Seq.lemma_eq_intro (as_seq h3 data) (Seq.slice (as_seq h3 final_blocks) 0 (U64.v len));
+  // (**) assert(as_seq h3 data == Seq.slice (as_seq h3 final_blocks) 0 (U64.v len));
 
   (* Compute the final length of the data *)
   let n = state.((pos_count_w a)) in
 
   (* Set the padding *)
-  let padding = Buffer.offset final_blocks (u64_to_u32 len) in
-  (**) assert(U64.v len + v size_len_8 + 1 < 2 * v size_block);
-  (**) assert(H64.v n * v size_block + U64.v len < Spec.max_input_len_8);
-  (**) assert(length padding = (1 + (Spec.pad0_length (U64.v len)) + v size_len_8));
-  (**) assert((length padding + U64.v len) % v size_block = 0);
-  (**) Seq.lemma_eq_intro (reveal_sbytes (as_seq h3 padding)) (Seq.create (1 + (Spec.pad0_length (U64.v len)) + v size_len_8) 0uy);
-  (**) assert(reveal_sbytes (as_seq h3 padding) == Seq.create (1 + (Spec.pad0_length (U64.v len)) + v size_len_8) 0uy);
-  pad padding n len;
+  let padding = Buffer.offset final_blocks (cast_word_to_uint32_t a len) in
+  // (**) assert(U64.v len + v size_len_8 + 1 < 2 * v size_block);
+  // (**) assert(H64.v n * v size_block + U64.v len < Spec.max_input8 a);
+  // (**) assert(length padding = (1 + (Spec.pad0_length (U64.v len)) + v size_len_8));
+  // (**) assert((length padding + U64.v len) % v size_block = 0);
+  // (**) Seq.lemma_eq_intro (reveal_sbytes (as_seq h3 padding)) (Seq.create (1 + (Spec.pad0_length (U64.v len)) + v size_len_8) 0uy);
+  // (**) assert(reveal_sbytes (as_seq h3 padding) == Seq.create (1 + (Spec.pad0_length (U64.v len)) + v size_len_8) 0uy);
+  pad a padding n len;
 
   (* Proof that final_blocks = data @| padding *)
-  (**) let h4 = ST.get () in
-  (**) assert(disjoint padding data);
-  (**) no_upd_lemma_1 h3 h4 padding data;
-  (**) Seq.lemma_eq_intro (as_seq h4 (Buffer.sub final_blocks 0ul (u64_to_u32 len))) (Seq.slice (as_seq h4 final_blocks) 0 (U64.v len));
-  (**) no_upd_lemma_1 h3 h4 padding (Buffer.sub final_blocks 0ul (u64_to_u32 len));
-  (**) assert(reveal_sbytes (as_seq h4 data) == Seq.slice (reveal_sbytes (as_seq h4 final_blocks)) 0 (U64.v len));
+  // (**) let h4 = ST.get () in
+  // (**) assert(disjoint padding data);
+  // (**) no_upd_lemma_1 h3 h4 padding data;
+  // (**) Seq.lemma_eq_intro (as_seq h4 (Buffer.sub final_blocks 0ul (u64_to_u32 len))) (Seq.slice (as_seq h4 final_blocks) 0 (U64.v len));
+  // (**) no_upd_lemma_1 h3 h4 padding (Buffer.sub final_blocks 0ul (u64_to_u32 len));
+  // (**) assert(reveal_sbytes (as_seq h4 data) == Seq.slice (reveal_sbytes (as_seq h4 final_blocks)) 0 (U64.v len));
 
-  (**) Seq.lemma_eq_intro (as_seq h4 (Buffer.offset final_blocks (u64_to_u32 len))) (Seq.slice (as_seq h4 final_blocks) (U64.v len) (v nb * v size_block));
-  (**) Seq.lemma_eq_intro (as_seq h4 padding) (Seq.slice (as_seq h4 final_blocks) (U64.v len) (v nb * v size_block));
-  (**) assert(as_seq h4 padding == Seq.slice (as_seq h4 final_blocks) (U64.v len) (v nb * v size_block));
-  (**) Lemmas.lemma_sub_append_2 h4 final_blocks 0ul data (u64_to_u32 len) padding (nb *^ size_block);
-  (**) assert(as_seq h4 final_blocks == Seq.append (as_seq h4 data) (as_seq h4 padding));
+  // (**) Seq.lemma_eq_intro (as_seq h4 (Buffer.offset final_blocks (u64_to_u32 len))) (Seq.slice (as_seq h4 final_blocks) (U64.v len) (v nb * v size_block));
+  // (**) Seq.lemma_eq_intro (as_seq h4 padding) (Seq.slice (as_seq h4 final_blocks) (U64.v len) (v nb * v size_block));
+  // (**) assert(as_seq h4 padding == Seq.slice (as_seq h4 final_blocks) (U64.v len) (v nb * v size_block));
+  // (**) Lemmas.lemma_sub_append_2 h4 final_blocks 0ul data (u64_to_u32 len) padding (nb *^ size_block);
+  // (**) assert(as_seq h4 final_blocks == Seq.append (as_seq h4 data) (as_seq h4 padding));
 
-  (* Call the update function on one or two blocks *)
-  (**) assert(length final_blocks % v size_block = 0 /\ disjoint state data);
-  (**) assert(v nb * v size_block = length final_blocks);
-  (**) assert(live h4 state /\ live h4 final_blocks);
-  (**) assert(let seq_k = Seq.slice (as_seq h4 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
-              let seq_counter = Seq.slice (as_seq h4 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)) in
-              let counter = Seq.index seq_counter 0 in
-              reveal_h64s seq_k == Spec.k /\ H64.v counter < (pow2 64 - 2));
+  // (* Call the update function on one or two blocks *)
+  // (**) assert(length final_blocks % v size_block = 0 /\ disjoint state data);
+  // (**) assert(v nb * v size_block = length final_blocks);
+  // (**) assert(live h4 state /\ live h4 final_blocks);
+  // (**) assert(let seq_k = Seq.slice (as_seq h4 state) (U32.v pos_k_w) (U32.(v pos_k_w + v size_k_w)) in
+  //             let seq_counter = Seq.slice (as_seq h4 state) (U32.v (pos_count_w a)) (U32.(v (pos_count_w a) + v size_count_w)) in
+  //             let counter = Seq.index seq_counter 0 in
+  //             reveal_h64s seq_k == Spec.k /\ H64.v counter < (pow2 64 - 2));
 
-  update_multi state final_blocks nb;
+  update_multi a state final_blocks nb;
 
   (* Pop the memory frame *)
   (**) pop_frame()
 
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 20"
-
 [@"substitute"]
 val finish_core:
-  hash_w :uint64_p {length hash_w = v size_hash_w} ->
-  hash   :uint8_p  {length hash = v size_hash /\ disjoint hash_w hash} ->
+  a: hash_alg ->
+  hash_w :hash_w a ->
+  hash   :hash_b a{disjoint hash_w hash} ->
   Stack unit
         (requires (fun h0 -> live h0 hash_w /\ live h0 hash))
         (ensures  (fun h0 _ h1 -> live h0 hash_w /\ live h0 hash /\ live h1 hash /\ modifies_1 hash h0 h1
-                  /\ (let seq_hash_w = reveal_h64s (as_seq h0 hash_w) in
-                  let seq_hash = reveal_sbytes (as_seq h1 hash) in
-                  seq_hash = Spec.words_to_be (U32.v size_hash_w) seq_hash_w)))
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 50"
+                  /\ (let seq_hash_w = buffer_reveal a (as_seq h0 hash_w) in
+                  let seq_hash = buffer_reveal a (as_seq h1 hash) in
+                  seq_hash = Spec.words_to_be a (U32.v size_hash_w) seq_hash_w)))
 
 [@"substitute"]
-let finish_core hash_w hash = uint64s_to_be_bytes hash hash_w size_hash_w
+let finish_core a hash_w hash = uint64s_to_be_bytes hash hash_w size_hash_w
 
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 20"
 
 val finish:
-  state :uint64_p{length state = v size_state} ->
-  hash  :uint8_p{length hash = v size_hash /\ disjoint state hash} ->
+  a: hash_alg ->
+  state :state a->
+  hash  :hash_b a{disjoint state hash} ->
   Stack unit
         (requires (fun h0 -> live h0 state /\ live h0 hash))
         (ensures  (fun h0 _ h1 -> live h0 state /\ live h1 hash /\ modifies_1 hash h0 h1
                   /\ (let seq_hash_w = Seq.slice (as_seq h0 state) (U32.v (pos_whash_w a)) (U32.(v (pos_whash_w a) + v size_whash_w)) in
                   let seq_hash = reveal_sbytes (as_seq h1 hash) in
-                  seq_hash = Spec.finish (reveal_h64s seq_hash_w))))
+                  seq_hash = Spec.finish a (buffer_reveal a seq_hash_w))))
 
-let finish state hash =
+let finish a state hash =
   let hash_w = Buffer.sub state (pos_whash_w a) size_whash_w in
-  finish_core hash_w hash
+  finish_core a hash_w hash
 
-
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 20"
 
 val hash:
-  hash :uint8_p {length hash = v size_hash} ->
-  input:uint8_p {length input < Spec.max_input_len_8 /\ disjoint hash input} ->
+  a: hash_alg ->
+  hash :hash_b a ->
+  input:uint8_p {length input < Spec.max_input8 a /\ disjoint hash input} ->
   len  :uint32_t{v len = length input} ->
   Stack unit
         (requires (fun h0 -> live h0 hash /\ live h0 input))
         (ensures  (fun h0 _ h1 -> live h0 input /\ live h0 hash /\ live h1 hash /\ modifies_1 hash h0 h1
                   /\ (let seq_input = reveal_sbytes (as_seq h0 input) in
                   let seq_hash = reveal_sbytes (as_seq h1 hash) in
-                  seq_hash == Spec.hash seq_input)))
+                  seq_hash == Spec.hash a seq_input)))
 
-#reset-options "--z3refresh --max_fuel 0  --z3rlimit 100"
-
-let hash hash input len =
+let hash a hash input len =
 
   (* Push a new memory frame *)
   (**) push_frame ();
 
   (* Allocate memory for the hash state *)
-  let state = Buffer.create (u32_to_h64 0ul) size_state in
+  let state = Buffer.create (word_zero a) (size_state a) in
 
   (* Compute the number of blocks to process *)
-  let n = U32.div len size_block in
-  let r = U32.rem len size_block in
+  let n = word_div a len (size_block a) in
+  let r = word_rem a len (size_block a) in
 
   (* Get all full blocks the last block *)
-  let input_blocks = Buffer.sub input 0ul (n *%^ size_block) in
-  let input_last = Buffer.sub input (n *%^ size_block) r in
+  let input_blocks = Buffer.sub input (word_zero a) (n *%^ (size_block a)) in
+  let input_last = Buffer.sub input (n *%^ (size_block a)) r in
 
   (* Initialize the hash function *)
-  init state;
+  init a state;
 
   (* Update the state with input blocks *)
-  update_multi state input_blocks n;
+  update_multi a state input_blocks n;
 
   (* Process the last block of input *)
-  update_last state input_last (u32_to_u64 r);
+  update_last a state input_last (u32_to_u64 r);
 
   (* Finalize the hash output *)
-  finish state hash;
+  finish a state hash;
 
   (* Pop the memory frame *)
   (**) pop_frame ()
