@@ -135,9 +135,13 @@ let word_lognot: a:hash_alg -> Tot ((word a) -> Tot (word a)) = function
   | SHA2_224 | SHA2_256 -> UInt32.lognot
   | SHA2_384 | SHA2_512 -> UInt64.lognot
 
-let word_shift_right: a:hash_alg -> Tot (word a -> s:UInt32.t -> Tot (word a)) = function
+#set-options "--lax"
+
+let word_shift_right: a:hash_alg -> (word a -> x:UInt32.t{UInt32.v x < word_n a} -> word a) = function
   | SHA2_224 | SHA2_256 -> UInt32.shift_right
   | SHA2_384 | SHA2_512 -> UInt64.shift_right
+
+#reset-options "--max_fuel 0 --z3rlimit 25"
 
 let rotate_right32 (x:UInt32.t) (s:UInt32.t{0 < v s /\ v s < 32}) : Tot UInt32.t =
   ((x >>^ s) |^ (x <<^ (32ul -^ s)))
