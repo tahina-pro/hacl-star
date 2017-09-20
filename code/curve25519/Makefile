@@ -52,6 +52,11 @@ X25519_FILES=$(BIGNUM) $(X25519_SPECIFIC)
 
 FSTAR_INCLUDES+=--include ../bignum
 
+# Parameter for interactive mode
+%.fst-in:
+	@echo $(OPTIONS) --hint_info \
+	$(FSTAR_INCLUDES)
+
 ct: $(addsuffix -lax, $(X25519_FILES))
 	# Using the --verify_all argument to lift abstractions, typechecks all dependencies of Curve25519.fst
 	$(FSTAR) --lax --verify_all Curve25519.fst
@@ -82,7 +87,7 @@ KREMLIN_ARGS+=-I ../bignum -tmpdir x25519-c \
 # Acknowledge the F* dependency graph
 .PHONY: depend
 depend:
-	$(FSTARB) --dep make $(X25519_FILES) > .depend
+	$(FSTAR) --dep make $(X25519_FILES) > .depend
 -include .depend
 
 x25519-c/out.krml: $(X25519_FILES) Hacl.Test.X25519.fst
@@ -90,12 +95,12 @@ x25519-c/out.krml: $(X25519_FILES) Hacl.Test.X25519.fst
 
 x25519-c/Curve25519.c x25519-c/Hacl_Test_X25519.c: x25519-c/out.krml
 	$(KREMLIN) $(KREMLIN_ARGS) -no-prefix Hacl.Test.X25519 \
-	 	-bundle 'Curve25519=Hacl.Bignum,Hacl.Bignum.*,Hacl.EC,Hacl.EC.\*' \
+	 	-bundle 'Curve25519=Hacl.Bignum,Hacl.Bignum.*,Hacl.EC,Hacl.EC.*' \
 		-skip-compilation $^ -o $@
 
-x25519.exe: x25519-c/out.krml Hacl.Test.X25519.fst
+x25519.exe: x25519-c/out.krml
 	$(KREMLIN) $(KREMLIN_ARGS) -no-prefix Hacl.Test.X25519 \
-	 	-bundle 'Curve25519=Hacl.Bignum,Hacl.Bignum.*,Hacl.EC,Hacl.EC.\*' \
+	 	-bundle 'Curve25519=Hacl.Bignum,Hacl.Bignum.*,Hacl.EC,Hacl.EC.*' \
 		$^ -o $@
 	./$@
 
