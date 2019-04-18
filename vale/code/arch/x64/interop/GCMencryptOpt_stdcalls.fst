@@ -87,10 +87,10 @@ val gcm128_encrypt_opt':
       disjoint_or_eq hkeys_b in128_b /\ disjoint_or_eq hkeys_b in128x6_b /\
       disjoint_or_eq hkeys_b auth_b /\ disjoint_or_eq hkeys_b abytes_b /\
 
-      disjoint_or_eq in128_b in128x6_b /\ disjoint_or_eq in128_b auth_b /\
+      disjoint_or_eq in128_b in128x6_b /\
       disjoint_or_eq in128_b abytes_b /\
       
-      disjoint_or_eq in128x6_b auth_b /\ disjoint_or_eq in128x6_b abytes_b /\
+      disjoint_or_eq in128x6_b abytes_b /\
       
       disjoint_or_eq auth_b abytes_b /\
 
@@ -317,7 +317,6 @@ val gcm128_encrypt_opt_alloca:
       B.disjoint out_b auth_b /\ disjoint_or_eq out_b plain_b /\
       
       B.disjoint plain_b keys_b /\ B.disjoint plain_b hkeys_b /\
-      B.disjoint plain_b auth_b /\
 
       disjoint_or_eq keys_b hkeys_b /\ 
       B.disjoint keys_b auth_b /\ B.disjoint hkeys_b auth_b /\

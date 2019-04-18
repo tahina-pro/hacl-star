@@ -84,7 +84,6 @@ let encrypt_opt_stdcall_st (a: algorithm { a = AES_128 \/ a = AES_256 }) =
       B.disjoint out_b auth_b /\ disjoint_or_eq out_b plain_b /\
       
       B.disjoint plain_b keys_b /\ B.disjoint plain_b hkeys_b /\
-      B.disjoint plain_b auth_b /\
 
       disjoint_or_eq keys_b hkeys_b /\ 
       B.disjoint keys_b auth_b /\ B.disjoint hkeys_b auth_b /\
